@@ -230,6 +230,7 @@ export type Database = {
           event_date: string
           id: string
           image_url: string | null
+          is_pinned: boolean | null
           location: string | null
           price: number | null
           title: string
@@ -241,6 +242,7 @@ export type Database = {
           event_date: string
           id?: string
           image_url?: string | null
+          is_pinned?: boolean | null
           location?: string | null
           price?: number | null
           title: string
@@ -252,6 +254,7 @@ export type Database = {
           event_date?: string
           id?: string
           image_url?: string | null
+          is_pinned?: boolean | null
           location?: string | null
           price?: number | null
           title?: string

@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from './RichTextEditor';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,6 +30,7 @@ export function EventsManager() {
   const [imageUrl, setImageUrl] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showRegistrations, setShowRegistrations] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
 
   const { data: events } = useQuery({
     queryKey: ['admin-events'],
@@ -35,6 +38,7 @@ export function EventsManager() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .order('is_pinned', { ascending: false })
         .order('event_date', { ascending: false });
       if (error) throw error;
       return data;
@@ -84,6 +88,7 @@ export function EventsManager() {
     setPrice('');
     setCapacity('');
     setImageUrl('');
+    setIsPinned(false);
     setEditingEvent(null);
     setShowDialog(false);
   };
@@ -97,6 +102,7 @@ export function EventsManager() {
     setPrice(event.price?.toString() || '');
     setCapacity(event.capacity?.toString() || '');
     setImageUrl(event.image_url || '');
+    setIsPinned(event.is_pinned || false);
     setShowDialog(true);
   };
 
@@ -109,6 +115,7 @@ export function EventsManager() {
       price: price ? parseFloat(price) : 0,
       capacity: capacity ? parseInt(capacity) : null,
       image_url: imageUrl || null,
+      is_pinned: isPinned,
     };
 
     if (editingEvent) {
@@ -139,7 +146,12 @@ export function EventsManager() {
           <TableBody>
             {events?.map((event) => (
               <TableRow key={event.id}>
-                <TableCell>{event.title}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {event.title}
+                    {event.is_pinned && <Badge variant="secondary" className="text-xs">Pinned</Badge>}
+                  </div>
+                </TableCell>
                 <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                 <TableCell>{event.location || '-'}</TableCell>
                 <TableCell>LKR {event.price}</TableCell>
@@ -208,6 +220,10 @@ export function EventsManager() {
               onChange={setImageUrl}
               folder="events"
             />
+            <div className="flex items-center gap-2">
+              <Switch id="isPinned" checked={isPinned} onCheckedChange={setIsPinned} />
+              <Label htmlFor="isPinned">Pin event to top</Label>
+            </div>
             <div className="flex gap-2">
               <Button onClick={handleSubmit} disabled={!title || !eventDate}>
                 {editingEvent ? 'Update' : 'Create'}

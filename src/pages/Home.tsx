@@ -6,7 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, BookOpen, Heart } from 'lucide-react';
+import { Calendar, Users, BookOpen, Heart, Pin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
         .from('events')
         .select('*')
         .gte('event_date', new Date().toISOString())
+        .order('is_pinned', { ascending: false, nullsFirst: false })
         .order('event_date', { ascending: true })
         .limit(3);
 
@@ -120,8 +122,16 @@ export default function Home() {
                     </div>
                   )}
                   <CardHeader>
-                    <CardTitle className="group-hover:text-primary transition-smooth">{event.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <div className="flex justify-between items-start gap-4">
+                      <CardTitle className="group-hover:text-primary transition-smooth">{event.title}</CardTitle>
+                      {event.is_pinned && (
+                        <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+                          <Pin className="w-3 h-3 mr-1" />
+                          Pinned
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2 mt-2">
                       <Calendar className="w-4 h-4" />
                       {format(new Date(event.event_date), 'PPP')}
                     </p>

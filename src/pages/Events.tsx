@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Calendar, MapPin, Users, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Pin } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { ScrollReveal } from '@/components/ScrollReveal';
 
 export default function Events() {
@@ -16,6 +17,7 @@ export default function Events() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .order('is_pinned', { ascending: false, nullsFirst: false })
         .order('event_date', { ascending: true });
 
       if (error) throw error;
@@ -55,7 +57,15 @@ export default function Events() {
                   />
                 )}
                 <CardHeader>
-                  <CardTitle>{event.title}</CardTitle>
+                  <div className="flex justify-between items-start gap-4">
+                    <CardTitle>{event.title}</CardTitle>
+                    {event.is_pinned && (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
+                        <Pin className="w-3 h-3 mr-1" />
+                        Pinned
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
