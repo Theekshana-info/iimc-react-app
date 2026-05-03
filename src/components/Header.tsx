@@ -1,0 +1,209 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
+import { Button } from './ui/button';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { ThemeToggle } from './ThemeToggle';
+import iimcLogo from '@/assets/iimc-logo.jpg';
+
+export function Header() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+        setIsAdmin(!!roles);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      checkUser();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const navLinks = [
+    { to: '/', label: 'Home' },
+    { to: '/about', label: 'About' },
+    { to: '/events', label: 'Events' },
+    { to: '/teachers', label: 'Teachers' },
+    { to: '/blog', label: 'Blog' },
+    { to: '/gallery', label: 'Gallery' },
+    { to: '/contact', label: 'Contact' },
+  ];
+
+  return (
+    <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto neu-header rounded-full flex h-16 items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <img
+            src={iimcLogo}
+            alt="IIMC Logo"
+            className="h-8 sm:h-9 w-8 sm:w-9 rounded-full object-cover neu-inset p-0.5"
+          />
+          <span
+            className="text-xl sm:text-2xl font-bold"
+            style={{
+              background: 'var(--gradient-primary)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            IIMC
+          </span>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="text-sm font-bold text-muted-foreground hover:text-primary transition-smooth whitespace-nowrap"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="hidden lg:flex items-center space-x-3">
+          <ThemeToggle />
+          <Button 
+            variant="outline" 
+            size="default" 
+            className="text-emerald-600 dark:text-emerald-400 font-bold hover:text-emerald-500 px-5 text-sm sm:text-base"
+            onClick={() => navigate('/donate')}
+          >
+            Donate
+          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
+              Admin
+            </Button>
+          )}
+          {user ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+                Profile
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/activities')}>
+                Activities
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => navigate('/auth')}>
+              Sign In
+            </Button>
+          )}
+        </div>
+
+        {/* Mobile Menu Button */}
+        <div className="flex lg:hidden items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-emerald-600 dark:text-emerald-400 font-bold hover:text-emerald-500 text-xs px-3 h-9"
+            onClick={() => navigate('/donate')}
+          >
+            Donate
+          </Button>
+          <ThemeToggle />
+          <Button
+            variant="default"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Toggle menu"
+            className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+          >
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      {isOpen && (
+        <div className="lg:hidden neu-inset rounded-3xl mt-4 mx-auto max-w-[calc(100%-2rem)] max-h-[80vh] overflow-y-auto">
+          <nav className="flex flex-col p-4 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="text-sm font-medium text-muted-foreground hover:text-primary py-3 px-3 rounded-md hover:bg-muted/50 transition-smooth"
+                onClick={() => setIsOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="border-t mt-4 pt-4 flex flex-col gap-4">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => { navigate('/admin'); setIsOpen(false); }}
+                >
+                  Admin
+                </Button>
+              )}
+              {user ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => { navigate('/profile'); setIsOpen(false); }}
+                  >
+                    Profile
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => { navigate('/activities'); setIsOpen(false); }}
+                  >
+                    My Activities
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => { navigate('/auth'); setIsOpen(false); }}
+                >
+                  Sign In
+                </Button>
+              )}
+            </div>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+}
