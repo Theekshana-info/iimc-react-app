@@ -35,7 +35,7 @@ export default function EventDetail() {
     },
   });
 
-  const { data: existingRegistration } = useQuery({
+  const { data: existingRegistration, refetch: refetchRegistration } = useQuery({
     queryKey: ['event-registration', id, user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -48,6 +48,22 @@ export default function EventDetail() {
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Count all confirmed (paid or pending) registrations for this event
+  const { data: registrationCount, refetch: refetchCount } = useQuery({
+    queryKey: ['event-registration-count', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('event_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', id)
+        .in('status', ['pending', 'paid']);
+
+      if (error) throw error;
+      return count ?? 0;
     },
   });
 
@@ -92,6 +108,8 @@ export default function EventDetail() {
 
         toast.success('Successfully registered for event!');
         setShowRegisterDialog(false);
+        refetchCount();
+        refetchRegistration();
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -160,7 +178,14 @@ export default function EventDetail() {
               {event.capacity && (
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
-                  <span>Capacity: {event.capacity}</span>
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {registrationCount ?? 0} / {event.capacity} registered
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {Math.max(0, event.capacity - (registrationCount ?? 0))} spots available
+                    </span>
+                  </div>
                 </div>
               )}
               {event.price !== null && (
@@ -209,6 +234,11 @@ export default function EventDetail() {
                     Complete Payment
                   </Button>
                 )}
+              </div>
+            ) : event.capacity && (registrationCount ?? 0) >= event.capacity ? (
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive text-center p-4 rounded-lg">
+                <p className="font-semibold">This event is fully booked</p>
+                <p className="text-sm mt-1">All {event.capacity} spots have been taken.</p>
               </div>
             ) : (
               <Button

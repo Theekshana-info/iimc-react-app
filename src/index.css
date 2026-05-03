@@ -19,9 +19,9 @@ All colors MUST be HSL.
     --popover-foreground: 212 40% 25%;
 
     --primary: 212 80% 45%;
-    --primary-foreground: 212 45% 92%; 
+    --primary-foreground: 212 45% 92%;
     --primary-glow: 212 80% 45%;
-    
+
     --secondary: 212 45% 92%;
     --secondary-foreground: 212 40% 35%;
 
@@ -38,7 +38,7 @@ All colors MUST be HSL.
     --input: 212 45% 92%;
     --ring: 212 80% 45%;
 
-    --radius: 1.5rem; 
+    --radius: 1.5rem;
 
     /* Neumorphic Shadows - Light */
     --shadow-color-dark: 212 45% 82%;
@@ -46,7 +46,7 @@ All colors MUST be HSL.
     --shadow-raised: 8px 8px 16px hsl(var(--shadow-color-dark)), -8px -8px 16px hsl(var(--shadow-color-light));
     --shadow-inset: inset 6px 6px 12px hsl(var(--shadow-color-dark)), inset -6px -6px 12px hsl(var(--shadow-color-light));
     --shadow-sm: 4px 4px 8px hsl(var(--shadow-color-dark)), -4px -4px 8px hsl(var(--shadow-color-light));
-    
+
     --gradient-primary: hsl(212 45% 92%);
     --gradient-hero: hsl(212 45% 92%);
     --gradient-card: hsl(212 45% 92%);
@@ -68,9 +68,9 @@ All colors MUST be HSL.
     --popover-foreground: 214 15% 85%;
 
     --primary: 212 80% 65%;
-    --primary-foreground: 214 25% 19%; 
+    --primary-foreground: 214 25% 19%;
     --primary-glow: 212 80% 65%;
-    
+
     --secondary: 214 25% 19%;
     --secondary-foreground: 214 15% 75%;
 
@@ -127,31 +127,32 @@ All colors MUST be HSL.
     background: hsl(var(--background));
     border: none;
   }
-  
+
   .neu-header {
     box-shadow: 4px 4px 10px hsl(var(--shadow-color-dark)), -4px -4px 10px hsl(var(--shadow-color-light));
     background: hsl(var(--background));
     border: none;
   }
-  
+
   .neu-inset {
     box-shadow: var(--shadow-inset);
     background: hsl(var(--background));
     border: none;
   }
-  
+
   .neu-btn {
     box-shadow: var(--shadow-raised);
     background: hsl(var(--background));
     border: none !important;
     transition: var(--transition-smooth);
   }
-  
+
   .neu-btn:hover {
     box-shadow: var(--shadow-sm);
   }
 
-  .neu-btn:active, .neu-btn[data-state="open"] {
+  .neu-btn:active,
+  .neu-btn[data-state="open"] {
     box-shadow: var(--shadow-inset);
   }
 }

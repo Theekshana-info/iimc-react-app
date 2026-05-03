@@ -12,10 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { EventRegistrationsView } from './EventRegistrationsView';
-import { Users } from 'lucide-react';
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus, UsersRound } from 'lucide-react';
 import { ImageUploadField } from './ImageUploadField';
+import { EventRegistrationsView } from './EventRegistrationsView';
 
 export function EventsManager() {
   const queryClient = useQueryClient();
@@ -153,6 +152,7 @@ export function EventsManager() {
               <TableHead>Date</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Price</TableHead>
+              <TableHead>Registrations</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -168,6 +168,17 @@ export function EventsManager() {
                 <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
                 <TableCell>{event.location || '-'}</TableCell>
                 <TableCell>LKR {event.price}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSelectedEvent(event); setShowRegistrations(true); }}
+                    className="flex items-center gap-1 text-xs"
+                  >
+                    <UsersRound className="h-3 w-3" />
+                    View
+                  </Button>
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(event)}>
@@ -291,6 +302,12 @@ export function EventsManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <EventRegistrationsView
+        event={selectedEvent}
+        open={showRegistrations}
+        onOpenChange={(open) => { setShowRegistrations(open); if (!open) setSelectedEvent(null); }}
+      />
     </div>
   );
 }
