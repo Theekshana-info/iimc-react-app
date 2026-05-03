@@ -6,9 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, BookOpen, Heart, Pin } from 'lucide-react';
+import { Calendar, Users, BookOpen, Heart, Pin, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { formatEventSchedule } from '@/lib/eventUtils';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -19,13 +20,20 @@ export default function Home() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .gte('event_date', new Date().toISOString())
         .order('is_pinned', { ascending: false, nullsFirst: false })
         .order('event_date', { ascending: true })
-        .limit(3);
+        .limit(6); // fetch more, then filter client-side
 
       if (error) throw error;
-      return data;
+
+      // Show recurring events always + upcoming one-time events
+      const now = new Date().toISOString();
+      const filtered = data?.filter(
+        (e) => e.recurrence_type !== 'none' && e.recurrence_type != null
+          ? true
+          : e.event_date >= now
+      );
+      return filtered?.slice(0, 3) ?? [];
     },
   });
 
@@ -132,8 +140,11 @@ export default function Home() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground flex items-center gap-2 mt-2">
-                      <Calendar className="w-4 h-4" />
-                      {format(new Date(event.event_date), 'PPP')}
+                      {event.recurrence_type && event.recurrence_type !== 'none'
+                        ? <RefreshCw className="w-4 h-4" />
+                        : <Calendar className="w-4 h-4" />
+                      }
+                      {formatEventSchedule(event)}
                     </p>
                   </CardHeader>
                   <CardContent>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from './RichTextEditor';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -31,6 +32,9 @@ export function EventsManager() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showRegistrations, setShowRegistrations] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
+  const [eventTime, setEventTime] = useState('');
+  const [recurrenceType, setRecurrenceType] = useState('none');
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
 
   const { data: events } = useQuery({
     queryKey: ['admin-events'],
@@ -89,6 +93,9 @@ export function EventsManager() {
     setCapacity('');
     setImageUrl('');
     setIsPinned(false);
+    setEventTime('');
+    setRecurrenceType('none');
+    setRecurrenceDays([]);
     setEditingEvent(null);
     setShowDialog(false);
   };
@@ -103,6 +110,9 @@ export function EventsManager() {
     setCapacity(event.capacity?.toString() || '');
     setImageUrl(event.image_url || '');
     setIsPinned(event.is_pinned || false);
+    setEventTime(event.event_time || '');
+    setRecurrenceType(event.recurrence_type || 'none');
+    setRecurrenceDays(event.recurrence_days || []);
     setShowDialog(true);
   };
 
@@ -110,12 +120,15 @@ export function EventsManager() {
     const eventData = {
       title,
       description,
-      event_date: new Date(eventDate).toISOString(),
+      event_date: eventDate ? new Date(eventDate).toISOString() : new Date().toISOString(),
       location,
       price: price ? parseFloat(price) : 0,
       capacity: capacity ? parseInt(capacity) : null,
       image_url: imageUrl || null,
       is_pinned: isPinned,
+      event_time: eventTime || null,
+      recurrence_type: recurrenceType,
+      recurrence_days: recurrenceDays.length > 0 ? recurrenceDays : null,
     };
 
     if (editingEvent) {
@@ -196,14 +209,59 @@ export function EventsManager() {
             />
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="eventDate">Date *</Label>
+                <Label htmlFor="eventDate">Start Date / Event Date *</Label>
                 <Input id="eventDate" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="eventTime">Time</Label>
+                <Input id="eventTime" type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Recurrence</Label>
+                <Select value={recurrenceType} onValueChange={setRecurrenceType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">One-time Event</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly (Specific Days)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="location">Location</Label>
                 <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
               </div>
             </div>
+
+            {recurrenceType === 'weekly' && (
+              <div className="space-y-2">
+                <Label>Repeat on</Label>
+                <div className="flex flex-wrap gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                    <Button
+                      key={day}
+                      type="button"
+                      variant={recurrenceDays.includes(idx) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (recurrenceDays.includes(idx)) {
+                          setRecurrenceDays(recurrenceDays.filter(d => d !== idx));
+                        } else {
+                          setRecurrenceDays([...recurrenceDays, idx]);
+                        }
+                      }}
+                    >
+                      {day}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="price">Price (LKR)</Label>
@@ -225,7 +283,7 @@ export function EventsManager() {
               <Label htmlFor="isPinned">Pin event to top</Label>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSubmit} disabled={!title || !eventDate}>
+              <Button onClick={handleSubmit} disabled={!title || (recurrenceType === 'none' && !eventDate)}>
                 {editingEvent ? 'Update' : 'Create'}
               </Button>
               <Button variant="outline" onClick={resetForm}>Cancel</Button>

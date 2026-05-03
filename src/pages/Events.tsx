@@ -3,10 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { Calendar, MapPin, Users, DollarSign, Pin } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Pin, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { formatEventSchedule } from '@/lib/eventUtils';
 
 export default function Events() {
   const navigate = useNavigate();
@@ -14,6 +14,8 @@ export default function Events() {
   const { data: events, isLoading } = useQuery({
     queryKey: ['events'],
     queryFn: async () => {
+      // Fetch all events: pinned first, then by date ascending.
+      // We fetch ALL events (including recurring ones with older dates) so they stay visible.
       const { data, error } = await supabase
         .from('events')
         .select('*')
@@ -21,7 +23,14 @@ export default function Events() {
         .order('event_date', { ascending: true });
 
       if (error) throw error;
-      return data;
+
+      // Filter: show one-time upcoming events + all recurring events
+      const now = new Date().toISOString();
+      return data?.filter(
+        (e) => e.recurrence_type !== 'none' && e.recurrence_type != null
+          ? true  // always show recurring events
+          : e.event_date >= now // only show upcoming one-time events
+      );
     },
   });
 
@@ -69,8 +78,11 @@ export default function Events() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {format(new Date(event.event_date), 'PPP')}
+                    {event.recurrence_type && event.recurrence_type !== 'none'
+                      ? <RefreshCw className="h-4 w-4" />
+                      : <Calendar className="h-4 w-4" />
+                    }
+                    <span>{formatEventSchedule(event)}</span>
                   </div>
                   {event.location && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

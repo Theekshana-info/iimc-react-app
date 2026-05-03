@@ -233,6 +233,9 @@ export type Database = {
           is_pinned: boolean | null
           location: string | null
           price: number | null
+          recurrence_days: Json | null
+          recurrence_type: string | null
+          event_time: string | null
           title: string
         }
         Insert: {
@@ -245,6 +248,9 @@ export type Database = {
           is_pinned?: boolean | null
           location?: string | null
           price?: number | null
+          recurrence_days?: Json | null
+          recurrence_type?: string | null
+          event_time?: string | null
           title: string
         }
         Update: {
@@ -257,6 +263,9 @@ export type Database = {
           is_pinned?: boolean | null
           location?: string | null
           price?: number | null
+          recurrence_days?: Json | null
+          recurrence_type?: string | null
+          event_time?: string | null
           title?: string
         }
         Relationships: []

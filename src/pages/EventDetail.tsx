@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { Calendar, MapPin, Users, DollarSign, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, ArrowLeft, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatEventScheduleLong } from '@/lib/eventUtils';
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -144,8 +145,11 @@ export default function EventDetail() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <span>{format(new Date(event.event_date), 'PPPp')}</span>
+                {event.recurrence_type && event.recurrence_type !== 'none'
+                  ? <RefreshCw className="h-5 w-5 text-primary" />
+                  : <Calendar className="h-5 w-5 text-primary" />
+                }
+                <span>{formatEventScheduleLong(event)}</span>
               </div>
               {event.location && (
                 <div className="flex items-center gap-2">
