@@ -81,7 +81,7 @@ export default function Events() {
                     </div>
                   )}
                   <p className="text-muted-foreground line-clamp-3">
-                    {event.description}
+                    {event.description?.replace(/<[^>]*>?/gm, '')}
                   </p>
                   <Button className="w-full" onClick={() => navigate(`/events/${event.id}`)}>
                     View Details

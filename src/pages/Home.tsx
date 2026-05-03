@@ -128,7 +128,7 @@ export default function Home() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground line-clamp-3 mb-4">
-                      {event.description}
+                      {event.description?.replace(/<[^>]*>?/gm, '')}
                     </p>
                     <Button 
                       onClick={() => navigate(`/events/${event.id}`)}
