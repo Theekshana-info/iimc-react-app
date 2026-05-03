@@ -54,10 +54,10 @@ export default function Events() {
           </p>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-wrap justify-center gap-6">
           {events?.map((event, index) => (
-            <ScrollReveal key={event.id} delay={index * 80}>
-              <Card className="shadow-soft hover:shadow-glow transition-smooth h-full">
+            <ScrollReveal key={event.id} delay={index * 80} className="h-full w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+              <Card className="shadow-soft hover:shadow-glow transition-smooth h-full flex flex-col">
                 {event.image_url && (
                   <img
                     src={event.image_url}
@@ -76,36 +76,36 @@ export default function Events() {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 flex flex-col flex-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {event.recurrence_type && event.recurrence_type !== 'none'
-                      ? <RefreshCw className="h-4 w-4" />
-                      : <Calendar className="h-4 w-4" />
+                      ? <RefreshCw className="h-4 w-4 shrink-0" />
+                      : <Calendar className="h-4 w-4 shrink-0" />
                     }
                     <span>{formatEventSchedule(event)}</span>
                   </div>
                   {event.location && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="h-4 w-4 shrink-0" />
                       {event.location}
                     </div>
                   )}
                   {event.capacity && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
+                      <Users className="h-4 w-4 shrink-0" />
                       Capacity: {event.capacity}
                     </div>
                   )}
                   {event.price !== null && (
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <DollarSign className="h-4 w-4" />
+                      <DollarSign className="h-4 w-4 shrink-0" />
                       {event.price > 0 ? `LKR ${event.price}` : 'Free'}
                     </div>
                   )}
                   <p className="text-muted-foreground line-clamp-3">
                     {event.description?.replace(/<[^>]*>?/gm, '')}
                   </p>
-                  <Button className="w-full" onClick={() => navigate(`/events/${event.id}`)}>
+                  <Button className="w-full mt-auto" onClick={() => navigate(`/events/${event.id}`)}>
                     View Details
                   </Button>
                 </CardContent>

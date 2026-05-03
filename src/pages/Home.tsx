@@ -114,10 +114,10 @@ export default function Home() {
             </p>
           </ScrollReveal>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {upcomingEvents.map((event, index) => (
-              <ScrollReveal key={event.id} delay={index * 100}>
-                <Card className="shadow-soft hover-lift overflow-hidden group h-full">
+              <ScrollReveal key={event.id} delay={index * 100} className="h-full w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                <Card className="shadow-soft hover-lift overflow-hidden group h-full flex flex-col">
                   {event.image_url && (
                     <div className="relative overflow-hidden">
                       <img
@@ -141,19 +141,19 @@ export default function Home() {
                     </div>
                     <p className="text-sm text-muted-foreground flex items-center gap-2 mt-2">
                       {event.recurrence_type && event.recurrence_type !== 'none'
-                        ? <RefreshCw className="w-4 h-4" />
-                        : <Calendar className="w-4 h-4" />
+                        ? <RefreshCw className="w-4 h-4 shrink-0" />
+                        : <Calendar className="w-4 h-4 shrink-0" />
                       }
                       {formatEventSchedule(event)}
                     </p>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex flex-col flex-1">
                     <p className="text-muted-foreground line-clamp-3 mb-4">
                       {event.description?.replace(/<[^>]*>?/gm, '')}
                     </p>
                     <Button 
                       onClick={() => navigate(`/events/${event.id}`)}
-                      className="w-full hover-glow"
+                      className="w-full hover-glow mt-auto"
                     >
                       Learn More
                     </Button>
