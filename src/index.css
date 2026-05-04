@@ -347,10 +347,6 @@ All colors MUST be HSL.
     will-change: transform;
   }
 
-  .marquee-track:hover {
-    animation-play-state: paused;
-  }
-
   .marquee-item {
     flex: 0 0 auto;
   }
