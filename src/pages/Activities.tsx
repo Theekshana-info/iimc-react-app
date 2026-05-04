@@ -38,6 +38,12 @@ export default function Activities() {
     );
   }
 
+  const gridLayout = activities.length === 1
+    ? 'grid-cols-1'
+    : activities.length === 2
+      ? 'grid-cols-1 md:grid-cols-2'
+      : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+
   return (
     <div className="min-h-screen py-20 gradient-hero">
       <div className="container px-4">
@@ -55,10 +61,14 @@ export default function Activities() {
             <p className="text-muted-foreground">No activities yet. Check back soon!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {activities.map((activity, index) => (
-              <ScrollReveal key={activity.id} delay={index * 80}>
-                <Card className="shadow-soft hover:shadow-glow transition-smooth h-full flex flex-col">
+              <ScrollReveal
+                key={activity.id}
+                delay={index * 80}
+                className="w-full flex justify-center md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]"
+              >
+                <Card className="shadow-soft hover:shadow-glow transition-smooth h-full flex flex-col w-full max-w-sm">
                   <img
                     src={activity.cover_image_url}
                     alt={activity.title}
