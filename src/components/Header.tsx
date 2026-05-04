@@ -49,7 +49,7 @@ export function Header() {
     { to: '/events', label: 'Events' },
     { to: '/teachers', label: 'Teachers' },
     { to: '/blog', label: 'Blog' },
-    { to: '/gallery', label: 'Gallery' },
+    { to: '/activities', label: 'Activities' },
     { to: '/contact', label: 'Contact' },
   ];
 
@@ -90,9 +90,9 @@ export function Header() {
 
         <div className="hidden lg:flex items-center space-x-3">
           <ThemeToggle />
-          <Button 
-            variant="outline" 
-            size="default" 
+          <Button
+            variant="outline"
+            size="default"
             className="text-emerald-600 dark:text-emerald-400 font-bold hover:text-emerald-500 px-5 text-sm sm:text-base"
             onClick={() => navigate('/donate')}
           >
@@ -108,9 +108,6 @@ export function Header() {
               <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
                 Profile
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/activities')}>
-                Activities
-              </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
@@ -124,9 +121,9 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="text-emerald-600 dark:text-emerald-400 font-bold hover:text-emerald-500 text-xs px-3 h-9"
             onClick={() => navigate('/donate')}
           >
@@ -178,14 +175,6 @@ export function Header() {
                     onClick={() => { navigate('/profile'); setIsOpen(false); }}
                   >
                     Profile
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => { navigate('/activities'); setIsOpen(false); }}
-                  >
-                    My Activities
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleLogout}>
                     Logout

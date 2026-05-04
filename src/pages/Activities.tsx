@@ -1,162 +1,90 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollReveal } from '@/components/ScrollReveal';
 import { format } from 'date-fns';
-import { Calendar, CreditCard } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+
+interface ActivitySummary {
+  id: string;
+  title: string;
+  summary: string;
+  cover_image_url: string;
+  created_at: string;
+}
 
 export default function Activities() {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate('/auth', { state: { from: { pathname: '/activities' } } });
-        return;
-      }
-
-      setUserId(user.id);
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  const { data: registrations } = useQuery({
-    queryKey: ['my-registrations', userId],
-    enabled: !!userId,
+  const { data: activities = [], isLoading } = useQuery({
+    queryKey: ['activities'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('event_registrations')
-        .select(`
-          *,
-          events (*)
-        `)
-        .eq('user_id', userId)
-        .order('registered_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: subscriptions } = useQuery({
-    queryKey: ['my-subscriptions', userId],
-    enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
+        .from('activities')
+        .select('id, title, summary, cover_image_url, created_at')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      return data;
+      return (data as unknown as ActivitySummary[]) ?? [];
     },
   });
 
-  if (!userId) {
-    return null;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading activities...</p>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen py-20 gradient-hero">
-      <div className="container px-4 max-w-6xl">
-        <h1 className="text-4xl font-bold text-center mb-12">My Activities</h1>
+      <div className="container px-4">
+        <ScrollReveal>
+          <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">Activities</h1>
+        </ScrollReveal>
+        <ScrollReveal delay={100}>
+          <p className="text-lg text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+            Stories and highlights from our meditation center and community.
+          </p>
+        </ScrollReveal>
 
-        <Tabs defaultValue="registrations" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-            <TabsTrigger value="registrations">Event Registrations</TabsTrigger>
-            <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="registrations" className="space-y-4">
-            {registrations && registrations.length > 0 ? (
-              registrations.map((registration) => (
-                <Card key={registration.id} className="shadow-soft">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{registration.events?.title}</CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                          <Calendar className="h-4 w-4" />
-                          {registration.events?.event_date &&
-                            format(new Date(registration.events.event_date), 'PPP')}
-                        </div>
-                      </div>
-                      <Badge variant={
-                        registration.status === 'paid' ? 'default' :
-                          registration.status === 'pending' ? 'secondary' :
-                            'destructive'
-                      }>
-                        {registration.status}
-                      </Badge>
+        {activities.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">No activities yet. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activities.map((activity, index) => (
+              <ScrollReveal key={activity.id} delay={index * 80}>
+                <Card className="shadow-soft hover:shadow-glow transition-smooth h-full flex flex-col">
+                  <img
+                    src={activity.cover_image_url}
+                    alt={activity.title}
+                    className="w-full h-52 object-cover rounded-t-xl"
+                    loading="lazy"
+                  />
+                  <CardHeader className="space-y-2">
+                    <CardTitle className="text-2xl">{activity.title}</CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {format(new Date(activity.created_at), 'PPP')}
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm">
-                      Registered on {format(new Date(registration.registered_at), 'PPP')}
+                  <CardContent className="flex flex-col flex-1">
+                    <p className="text-muted-foreground line-clamp-3 mb-4">
+                      {activity.summary}
                     </p>
+                    <Button className="mt-auto" onClick={() => navigate(`/activities/${activity.id}`)}>
+                      Read More
+                    </Button>
                   </CardContent>
                 </Card>
-              ))
-            ) : (
-              <Card className="shadow-soft">
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No event registrations yet</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="subscriptions" className="space-y-4">
-            {subscriptions && subscriptions.length > 0 ? (
-              subscriptions.map((subscription) => (
-                <Card key={subscription.id} className="shadow-soft">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{subscription.subscription_type}</CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                          <CreditCard className="h-4 w-4" />
-                          LKR {subscription.price}
-                        </div>
-                      </div>
-                      <Badge variant={
-                        subscription.status === 'active' ? 'default' :
-                          subscription.status === 'expired' ? 'secondary' :
-                            'destructive'
-                      }>
-                        {subscription.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Started: {format(new Date(subscription.start_date), 'PPP')}
-                    </p>
-                    {subscription.end_date && (
-                      <p className="text-sm text-muted-foreground">
-                        Ends: {format(new Date(subscription.end_date), 'PPP')}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card className="shadow-soft">
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">No active subscriptions</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+              </ScrollReveal>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { User, Calendar, DollarSign } from 'lucide-react';
+import { User, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
+import { UserActivities } from '@/components/profile/UserActivities';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -25,13 +26,12 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [events, setEvents] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         navigate('/auth', { state: { from: { pathname: '/profile' } } });
         return;
@@ -50,26 +50,6 @@ export default function Profile() {
         setProfile(profileData);
         setFullName(profileData.full_name || '');
         setPhone(profileData.phone || '');
-      }
-
-      // Load user's event registrations
-      const { data: eventRegs } = await supabase
-        .from('event_registrations')
-        .select(`
-          *,
-          events (
-            id,
-            title,
-            event_date,
-            location,
-            price
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('registered_at', { ascending: false });
-
-      if (eventRegs) {
-        setEvents(eventRegs);
       }
 
       // Load user's donation history
@@ -139,7 +119,7 @@ export default function Profile() {
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="events">My Events</TabsTrigger>
+            <TabsTrigger value="activities">My Activities</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
           </TabsList>
 
@@ -204,64 +184,16 @@ export default function Profile() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="events">
+          <TabsContent value="activities">
             <Card className="shadow-glow">
               <CardHeader>
-                <CardTitle>My Event Registrations</CardTitle>
+                <CardTitle>My Activities</CardTitle>
                 <CardDescription>
-                  View all events you have registered for
+                  View your event registrations and subscriptions
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {events.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    You haven't registered for any events yet.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {events.map((eventReg: any) => (
-                      <Card key={eventReg.id} className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-lg">
-                              {eventReg.events?.title || 'Event'}
-                            </h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span>
-                                {eventReg.events?.event_date
-                                  ? format(new Date(eventReg.events.event_date), 'PPP')
-                                  : 'Date TBD'}
-                              </span>
-                            </div>
-                            {eventReg.events?.location && (
-                              <p className="text-sm text-muted-foreground">
-                                {eventReg.events.location}
-                              </p>
-                            )}
-                            {eventReg.events?.price && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <DollarSign className="h-4 w-4" />
-                                <span>LKR {eventReg.events.price}</span>
-                              </div>
-                            )}
-                          </div>
-                          <Badge
-                            variant={
-                              eventReg.status === 'paid'
-                                ? 'default'
-                                : eventReg.status === 'pending'
-                                ? 'secondary'
-                                : 'outline'
-                            }
-                          >
-                            {eventReg.status}
-                          </Badge>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                <UserActivities userId={user.id} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -301,8 +233,8 @@ export default function Profile() {
                                 donation.status === 'paid'
                                   ? 'default'
                                   : donation.status === 'pending'
-                                  ? 'secondary'
-                                  : 'outline'
+                                    ? 'secondary'
+                                    : 'outline'
                               }
                             >
                               {donation.status}
@@ -317,7 +249,7 @@ export default function Profile() {
                                       .from('payments')
                                       .delete()
                                       .eq('id', donation.id);
-                                    
+
                                     if (error) {
                                       toast.error('Failed to delete donation');
                                     } else {

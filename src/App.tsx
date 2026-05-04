@@ -17,6 +17,7 @@ import BlogArticle from "./pages/BlogArticle";
 import Donate from "./pages/Donate";
 import Profile from "./pages/Profile";
 import Activities from "./pages/Activities";
+import ActivityDetail from "./pages/ActivityDetail";
 import Payment from "./pages/Payment";
 import PaymentResult from "./pages/PaymentResult";
 import Admin from "./pages/Admin";
@@ -24,7 +25,6 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import UserDetail from "./pages/UserDetail";
-import Gallery from "./pages/Gallery";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -49,9 +49,10 @@ const App = () => (
               <Route path="/blog/:id" element={<BlogArticle />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/donate" element={<Donate />} />
-              <Route path="/gallery" element={<Gallery />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/activities" element={<Activities />} />
+              <Route path="/activities/:id" element={<ActivityDetail />} />
+              <Route path="/gallery" element={<Activities />} />
               <Route path="/payment" element={<Payment />} />
               <Route path="/payment-result" element={<PaymentResult />} />
               <Route path="/admin" element={<Admin />} />
