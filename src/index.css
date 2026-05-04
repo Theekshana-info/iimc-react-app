@@ -329,4 +329,49 @@ All colors MUST be HSL.
   .hover-glow:hover::before {
     opacity: 0.6;
   }
+
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll 32s linear infinite;
+    will-change: transform;
+  }
+
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  .marquee-item {
+    flex: 0 0 auto;
+  }
+
+  .marquee-fade-left,
+  .marquee-fade-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 120px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .marquee-fade-left {
+    left: 0;
+    background: linear-gradient(to right, hsl(var(--background)) 0%, transparent 100%);
+  }
+
+  .marquee-fade-right {
+    right: 0;
+    background: linear-gradient(to left, hsl(var(--background)) 0%, transparent 100%);
+  }
 }

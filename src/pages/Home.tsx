@@ -1,4 +1,5 @@
 import { Hero } from '@/components/Hero';
+import { ImageMarquee } from '@/components/ImageMarquee';
 import { HomeMessage } from '@/components/HomeMessage';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useQuery } from '@tanstack/react-query';
@@ -64,6 +65,10 @@ export default function Home() {
     <div className="min-h-screen">
       <Hero />
 
+      <section className="py-12">
+        <ImageMarquee />
+      </section>
+
       {/* Features Section */}
       <section className="container px-4 py-20">
         <ScrollReveal>
@@ -102,7 +107,7 @@ export default function Home() {
       {upcomingEvents && upcomingEvents.length > 0 && (
         <section className="container px-4 py-20 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/20 to-transparent -z-10" />
-          
+
           <ScrollReveal>
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
               Upcoming Events
@@ -113,7 +118,7 @@ export default function Home() {
               Join us for these transformative meditation sessions and workshops
             </p>
           </ScrollReveal>
-          
+
           <div className="flex flex-wrap justify-center gap-6">
             {upcomingEvents.map((event, index) => (
               <ScrollReveal key={event.id} delay={index * 100} className="h-full w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
@@ -151,7 +156,7 @@ export default function Home() {
                     <p className="text-muted-foreground line-clamp-3 mb-4">
                       {event.description?.replace(/<[^>]*>?/gm, '')}
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => navigate(`/events/${event.id}`)}
                       className="w-full hover-glow mt-auto"
                     >
@@ -162,12 +167,12 @@ export default function Home() {
               </ScrollReveal>
             ))}
           </div>
-          
+
           <ScrollReveal delay={300}>
             <div className="text-center mt-12">
-              <Button 
-                variant="outline" 
-                size="lg" 
+              <Button
+                variant="outline"
+                size="lg"
                 onClick={() => navigate('/events')}
                 className="hover-lift"
               >
