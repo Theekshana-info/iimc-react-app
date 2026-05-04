@@ -247,6 +247,18 @@ All colors MUST be HSL.
     }
   }
 
+  @keyframes about-float {
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
@@ -270,6 +282,71 @@ All colors MUST be HSL.
         hsl(var(--primary) / 0.1) 50%,
         transparent 100%);
     background-size: 1000px 100%;
+  }
+
+  .about-float {
+    animation: about-float 6s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .about-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    justify-items: center;
+  }
+
+  .about-gallery-item {
+    display: flex;
+    justify-content: center;
+  }
+
+  .about-gallery-image {
+    width: clamp(88px, 22vw, 128px);
+    height: clamp(88px, 22vw, 128px);
+    border-radius: 28px;
+    object-fit: cover;
+    box-shadow: var(--shadow-soft);
+  }
+
+  @media (max-width: 767px) {
+    .about-gallery-item:nth-child(3n + 2) {
+      margin-top: 12px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .about-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 22px 18px;
+    }
+
+    .about-gallery-image {
+      width: clamp(120px, 10vw, 168px);
+      height: clamp(120px, 10vw, 168px);
+    }
+
+    .about-gallery-item:nth-child(odd) {
+      margin-top: -18px;
+    }
+
+    .about-gallery-item:nth-child(even) {
+      margin-top: 18px;
+    }
+
+    .about-gallery-item:nth-child(4n + 1) {
+      margin-top: -30px;
+    }
+
+    .about-gallery-item:nth-child(4n + 2) {
+      margin-top: 30px;
+    }
+
+    .about-gallery-item:nth-child(5n + 3) {
+      margin-top: -8px;
+    }
   }
 
   .animate-staggered-fade-up {

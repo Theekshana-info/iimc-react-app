@@ -1,11 +1,42 @@
 import { useSetting } from '@/hooks/useSetting';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import image1 from '@/assets/iimc-about-page-images/iimc-loby-1.png';
+import image2 from '@/assets/iimc-about-page-images/iimc-loby-2.png';
+import image3 from '@/assets/iimc-about-page-images/iimc-loby-3.png';
+import image4 from '@/assets/iimc-about-page-images/iimc-loby-4.png';
+import image5 from '@/assets/iimc-about-page-images/iimc-loby-5.png';
+import image6 from '@/assets/iimc-about-page-images/iimc-loby-6.png';
+import image7 from '@/assets/iimc-about-page-images/iimc-loby-7.png';
+import image8 from '@/assets/iimc-about-page-images/iimc-loby-8.png';
+import image9 from '@/assets/iimc-about-page-images/iimc-loby-9.png';
+import image10 from '@/assets/iimc-about-page-images/iimc-loby-10.png';
+import image11 from '@/assets/iimc-about-page-images/iimc-loby-11.png';
+import image12 from '@/assets/iimc-about-page-images/iimc-loby-12.png';
+import image13 from '@/assets/iimc-about-page-images/iimc-loby-13.png';
+
+const aboutImages = [
+  image1,
+  image2,
+  image3,
+  image4,
+  image5,
+  image6,
+  image7,
+  image8,
+  image9,
+  image10,
+  image11,
+  image12,
+];
 
 export default function About() {
+  const isMobile = useIsMobile();
   const { value: title } = useSetting('about_title');
   const { value: content } = useSetting('about_content');
+  const visibleImages = isMobile ? aboutImages.slice(0, 9) : aboutImages;
 
   return (
     <div className="min-h-screen py-12 sm:py-20">
@@ -20,7 +51,30 @@ export default function About() {
             {content}
           </p>
         </ScrollReveal>
+      </div>
 
+      <ScrollReveal delay={150}>
+        <div className="container px-4 max-w-6xl">
+          <div className="about-gallery">
+            {visibleImages.map((image, index) => (
+              <div key={`${image}-${index}`} className="about-gallery-item">
+                <img
+                  src={image}
+                  alt={`About gallery image ${index + 1}`}
+                  className="about-float about-gallery-image"
+                  style={{
+                    animationDelay: `${index * 0.25}s`,
+                    animationDuration: `${6 + (index % 4)}s`,
+                  }}
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </ScrollReveal>
+
+      <div className="container px-4 max-w-4xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mt-8 sm:mt-12">
           <ScrollReveal delay={0} direction="left">
             <Card className="shadow-soft h-full">
