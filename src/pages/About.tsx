@@ -79,11 +79,21 @@ export default function About() {
           <ScrollReveal delay={0} direction="left">
             <Card className="shadow-soft h-full">
               <CardContent className="pt-6">
-                <h3 className="text-xl sm:text-2xl font-semibold mb-4">Our Mission</h3>
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  To provide a welcoming sanctuary where individuals can explore meditation practices,
-                  cultivate mindfulness, and discover inner peace through authentic teachings and community support.
-                </p>
+                <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-center">Our Mission</h3>
+                <div className="text-muted-foreground text-sm sm:text-base space-y-3 text-center">
+                  <p>
+                    To offer spaces and practical techniques that nurture inner peace, mindful living, and spiritual growth.
+                  </p>
+                  <p>
+                    To welcome all regardless of age, background, or belief into a community built on kindness and respect.
+                  </p>
+                  <p>
+                    To inspire people to integrate mindfulness into daily life, so peace is not an escape, but a way of being.
+                  </p>
+                  <p>
+                    Here, every breath is a step towards awakening, and every person&apos;s journey is honored as unique and sacred.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </ScrollReveal>
@@ -91,11 +101,15 @@ export default function About() {
           <ScrollReveal delay={100} direction="right">
             <Card className="shadow-soft h-full">
               <CardContent className="pt-6">
-                <h3 className="text-xl sm:text-2xl font-semibold mb-4">Our Vision</h3>
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  To create a world where more people have access to the transformative power of meditation,
-                  leading to greater compassion, awareness, and harmony in daily life.
-                </p>
+                <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-center">Our Vision</h3>
+                <div className="text-muted-foreground text-sm sm:text-base space-y-3 text-center">
+                  <p>
+                    Vision is not just about teaching meditation; it is about creating a living space for transformation. We believe that true growth occurs when knowledge is transformed into experience, and when the mind learns to be still enough for the heart to be heard.
+                  </p>
+                  <p>
+                    To be a sanctuary where every person can step beyond the boundaries of stress, fear, and limitation, and awaken to a life of clarity, compassion, and purpose.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </ScrollReveal>
