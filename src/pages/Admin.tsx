@@ -10,12 +10,10 @@ import { UsersManager } from '@/components/admin/UsersManager';
 import { MessagesManager } from '@/components/admin/MessagesManager';
 import { DonationsManager } from '@/components/admin/DonationsManager';
 import BankDetailsManager from '@/components/admin/BankDetailsManager';
-import { SettingsManager } from '@/components/admin/SettingsManager';
 import { HomeMessagesManager } from '@/components/admin/HomeMessagesManager';
 import { SocialLinksManager } from '@/components/admin/SocialLinksManager';
-import { GalleryManager } from '@/components/admin/GalleryManager';
 import { ActivitiesManager } from '@/components/admin/ActivitiesManager';
-import { Calendar, BookOpen, Users, MessageSquare, Heart, Settings, GraduationCap, Building2, Image } from 'lucide-react';
+import { Calendar, BookOpen, Users, MessageSquare, Heart, GraduationCap, Building2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const adminTabs = [
@@ -26,11 +24,9 @@ const adminTabs = [
   { value: 'messages', label: 'Messages', icon: MessageSquare },
   { value: 'donations', label: 'Donations', icon: Heart },
   { value: 'bank-details', label: 'Banks', icon: Building2 },
-  { value: 'gallery', label: 'Gallery', icon: Image },
   { value: 'activities', label: 'Activities', icon: BookOpen },
   { value: 'home-messages', label: 'Home Msg', icon: MessageSquare },
   { value: 'social-links', label: 'Social', icon: Users },
-  { value: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Admin() {
@@ -86,11 +82,9 @@ export default function Admin() {
       messages: { title: 'Messages', desc: 'View contact form submissions', component: <MessagesManager /> },
       donations: { title: 'Donations & Payments', desc: 'View payment history', component: <DonationsManager /> },
       'bank-details': { title: 'Bank Details', desc: 'Manage bank accounts for direct donations', component: <BankDetailsManager /> },
-      gallery: { title: 'Gallery Manager', desc: 'Manage gallery images and videos', component: <GalleryManager /> },
       activities: { title: 'Activities Manager', desc: 'Create and manage activity posts', component: <ActivitiesManager /> },
       'home-messages': { title: 'Home Messages', desc: 'Manage homepage announcements', component: <HomeMessagesManager /> },
       'social-links': { title: 'Social Links', desc: 'Manage footer social media links', component: <SocialLinksManager /> },
-      settings: { title: 'Site Settings', desc: 'Configure site-wide settings', component: <SettingsManager /> },
     };
 
     const item = contentMap[activeTab];
@@ -135,7 +129,7 @@ export default function Admin() {
         {/* Desktop: tab bar */}
         <div className="hidden lg:block">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-12 gap-1">
+            <TabsList className="grid w-full grid-cols-10 gap-1">
               {adminTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1.5 text-xs">
                   <tab.icon className="h-3.5 w-3.5" />
