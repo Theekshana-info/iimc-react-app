@@ -38,14 +38,14 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
-  
+
   // Sign Up Form
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  
+
   // Sign In Form
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
@@ -62,7 +62,7 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const validated = signUpSchema.parse({
         email: signUpEmail,
@@ -73,9 +73,9 @@ export default function Auth() {
       });
 
       setLoading(true);
-      
+
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { data, error } = await supabase.auth.signUp({
         email: validated.email,
         password: validated.password,
@@ -103,7 +103,7 @@ export default function Auth() {
       }
 
       toast.success('Account created! Please check your email to verify your account.');
-      
+
       // Clear form
       setSignUpEmail('');
       setSignUpPassword('');
@@ -148,7 +148,7 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const validated = signInSchema.parse({
         email: signInEmail,
@@ -204,9 +204,9 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 rounded-lg p-1 bg-muted/40">
+              <TabsTrigger value="signin" className="border-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-md font-medium">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="border-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-md font-medium">Sign Up</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">

@@ -23,7 +23,7 @@ export function BlogManager() {
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [published, setPublished] = useState(false);
+  const [published, setPublished] = useState(true);
 
   const { data: posts } = useQuery({
     queryKey: ['admin-blog-posts'],
@@ -90,7 +90,7 @@ export function BlogManager() {
     setContent('');
     setExcerpt('');
     setImageUrl('');
-    setPublished(false);
+    setPublished(true);
     setEditingPost(null);
     setShowDialog(false);
   };
@@ -200,9 +200,9 @@ export function BlogManager() {
               onChange={setImageUrl}
               folder="blog"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 border-2 border-primary/20 rounded-lg p-3 bg-muted/20 w-max">
               <Switch id="published" checked={published} onCheckedChange={setPublished} />
-              <Label htmlFor="published">Published</Label>
+              <Label htmlFor="published" className="font-medium cursor-pointer">Published</Label>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSubmit} disabled={!title || !content}>

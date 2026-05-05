@@ -30,7 +30,7 @@ export function EventsManager() {
   const [imageUrl, setImageUrl] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showRegistrations, setShowRegistrations] = useState(false);
-  const [isPinned, setIsPinned] = useState(false);
+  const [isPinned, setIsPinned] = useState(true);
   const [eventTime, setEventTime] = useState('');
   const [recurrenceType, setRecurrenceType] = useState('none');
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
@@ -91,7 +91,7 @@ export function EventsManager() {
     setPrice('');
     setCapacity('');
     setImageUrl('');
-    setIsPinned(false);
+    setIsPinned(true);
     setEventTime('');
     setRecurrenceType('none');
     setRecurrenceDays([]);
@@ -289,9 +289,9 @@ export function EventsManager() {
               onChange={setImageUrl}
               folder="events"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 border-2 border-primary/20 rounded-lg p-3 bg-muted/20 w-max">
               <Switch id="isPinned" checked={isPinned} onCheckedChange={setIsPinned} />
-              <Label htmlFor="isPinned">Pin event to top</Label>
+              <Label htmlFor="isPinned" className="font-medium cursor-pointer">Pin event to top</Label>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSubmit} disabled={!title || (recurrenceType === 'none' && !eventDate)}>
