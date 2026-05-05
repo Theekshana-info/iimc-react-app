@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
         status = 'unknown';
     }
 
-    // Parse custom fields to get related_type and related_id
+    // Parse custom fields
     let relatedType: string | null = null;
     let relatedId: string | null = null;
 
@@ -93,11 +93,14 @@ Deno.serve(async (req) => {
       relatedId = id;
     }
 
-    // Upsert payment record
-    const { data: payment, error: paymentError } = await supabaseAdmin
+    const userId = body.get('custom_2')?.toString() || null;
+
+    // Create payment record from webhook directly (no pending state)
+    const { data: paymentData, error: paymentError } = await supabaseAdmin
       .from('payments')
-      .upsert({
+      .insert({
         transaction_id: paymentId,
+        user_id: userId,
         amount: parseFloat(payhereAmount),
         currency: payhereCurrency,
         status,
@@ -105,9 +108,6 @@ Deno.serve(async (req) => {
         related_id: relatedId,
         related_type: relatedType,
         payment_gateway: 'payhere',
-      }, {
-        onConflict: 'transaction_id',
-        ignoreDuplicates: false
       })
       .select()
       .single();
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       return new Response('ERROR', { status: 500 });
     }
 
-    console.log('Payment record upserted:', { id: payment.id, status });
+    console.log('Payment record inserted:', { id: paymentData.id, status });
 
     // If this is a successful event registration payment, update the registration status
     if (relatedType === 'event_registration' && relatedId && status === 'completed') {
@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
     if (relatedType === 'donation' && relatedId && status === 'completed') {
       const { error: donationError } = await supabaseAdmin
         .from('donations')
-        .update({ status: 'completed', payment_id: payment.id })
+        .update({ status: 'completed', payment_id: paymentData.id })
         .eq('id', relatedId);
 
       if (donationError) {

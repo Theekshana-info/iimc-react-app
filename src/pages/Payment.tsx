@@ -12,7 +12,8 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  const { amount, type, relatedId, description, isAnonymous, donationId } = location.state || {};
+  const { amount, type, relatedId: passedRelatedId, description, isAnonymous, donationId } = location.state || {};
+  const relatedId = passedRelatedId || donationId;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -61,33 +62,13 @@ export default function Payment() {
 
       if (error) throw error;
 
-      // Create payment record in our database
-      const { data: paymentData } = await supabase.from('payments').insert({
-        user_id: user.id !== 'anonymous' ? user.id : null,
-        amount,
-        payment_type: type,
-        related_id: relatedId,
-        related_type: type,
-        status: 'pending',
-      }).select().single();
-
-      // Update donation with payment_id if this is a donation
-      if (donationId && paymentData) {
-        await supabase
-          .from('donations')
-          .update({ payment_id: paymentData.id })
-          .eq('id', donationId);
-      }
-
       // ─── PayHere JS SDK: Onsite Checkout Popup ───
 
       // Set up event handlers BEFORE starting payment
       payhere.onCompleted = function onCompleted(completedOrderId: string) {
         console.log('Payment completed. OrderID:', completedOrderId);
-        // Navigate to result page — the actual payment status will be
-        // confirmed by the webhook, so we poll the DB on the result page
         navigate('/payment-result', {
-          state: { orderId: completedOrderId, paymentId: paymentData?.id },
+          state: { relatedId, paymentType: type, isPolling: true },
         });
       };
 
@@ -125,7 +106,7 @@ export default function Payment() {
         city: 'Colombo',
         country: 'Sri Lanka',
         custom_1: relatedId ? `${type}:${relatedId}` : type,
-        custom_2: paymentData?.id || '',
+        custom_2: user.id === 'anonymous' ? '' : user.id,
       };
 
       // Open the PayHere payment popup

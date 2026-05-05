@@ -13,38 +13,45 @@ export default function PaymentResult() {
   const navigate = useNavigate();
 
   // From JS SDK flow (via navigate state)
-  const stateOrderId = location.state?.orderId;
-  const statePaymentId = location.state?.paymentId;
+  const stateSuccess = location.state?.success;
+  const isPollingInitial = location.state?.isPolling;
+  const relatedId = location.state?.relatedId;
+  const paymentType = location.state?.paymentType;
 
   // From legacy redirect flow (via URL params)
   const urlSuccess = searchParams.get('success');
 
   const [status, setStatus] = useState<PaymentStatus>(
-    statePaymentId ? 'polling' : (urlSuccess === 'true' ? 'completed' : urlSuccess === 'false' ? 'failed' : 'unknown')
+    isPollingInitial ? 'polling' : (stateSuccess || urlSuccess === 'true' ? 'completed' : urlSuccess === 'false' ? 'failed' : 'unknown')
   );
+  
   const [pollCount, setPollCount] = useState(0);
   const MAX_POLLS = 10;
 
   // Poll the database for the real payment status from webhook
   useEffect(() => {
-    if (!statePaymentId || status !== 'polling') return;
+    if (!isPollingInitial || status !== 'polling' || !relatedId || !paymentType) return;
 
     const pollInterval = setInterval(async () => {
       setPollCount(prev => {
         if (prev >= MAX_POLLS) {
           clearInterval(pollInterval);
-          // After max polls, check one last time and show whatever we have
-          setStatus('pending');
+          // After max polls, we can't find a payment record, assume unknown
+          setStatus('unknown');
           return prev;
         }
         return prev + 1;
       });
 
+      // Look for the newest payment record matching this type and related ID
       const { data, error } = await supabase
         .from('payments')
         .select('status')
-        .eq('id', statePaymentId)
-        .single();
+        .eq('related_id', relatedId)
+        .eq('payment_type', paymentType)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
         console.error('Error polling payment status:', error);
@@ -58,7 +65,7 @@ export default function PaymentResult() {
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [statePaymentId, status]);
+  }, [isPollingInitial, status, relatedId, paymentType]);
 
   const isSuccess = status === 'completed';
   const isPending = status === 'polling' || status === 'pending';
