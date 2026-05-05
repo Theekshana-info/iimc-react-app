@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 
 export default function Payment() {
   const location = useLocation();
@@ -47,25 +47,21 @@ export default function Payment() {
 
     try {
       const orderId = `${type}_${Date.now()}`;
-      const returnUrl = `${window.location.origin}/payment-result?success=true`;
-      const cancelUrl = `${window.location.origin}/payment-result?success=false`;
       const notifyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payhere_webhook_handler`;
 
-      // Call edge function to create PayHere order
+      // Call edge function to create PayHere order (generates hash server-side)
       const { data, error } = await supabase.functions.invoke('create_payhere_order', {
         body: {
           amount,
           orderId,
           itemName: description || type,
-          returnUrl,
-          cancelUrl,
           notifyUrl,
         },
       });
 
       if (error) throw error;
 
-      // Create payment record
+      // Create payment record in our database
       const { data: paymentData } = await supabase.from('payments').insert({
         user_id: user.id !== 'anonymous' ? user.id : null,
         amount,
@@ -83,41 +79,58 @@ export default function Payment() {
           .eq('id', donationId);
       }
 
-      // Create PayHere form and submit
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = 'https://sandbox.payhere.lk/pay/checkout';
+      // ─── PayHere JS SDK: Onsite Checkout Popup ───
 
-      const fields = {
-        merchant_id: data.merchant_id,
-        return_url: returnUrl,
-        cancel_url: cancelUrl,
-        notify_url: notifyUrl,
-        order_id: data.order_id,
-        items: data.items,
-        currency: data.currency,
-        amount: data.amount,
-        first_name: user.id === 'anonymous' ? 'Donor' : (user.user_metadata?.full_name?.split(' ')[0] || 'User'),
-        last_name: user.id === 'anonymous' ? '' : (user.user_metadata?.full_name?.split(' ')[1] || ''),
-        email: user.id === 'anonymous' ? 'donor@anonymous.com' : user.email,
-        phone: '',
-        address: '',
-        city: '',
-        country: 'Sri Lanka',
-        hash: data.hash,
-        custom_1: relatedId ? `${type}:${relatedId}` : type,
+      // Set up event handlers BEFORE starting payment
+      payhere.onCompleted = function onCompleted(completedOrderId: string) {
+        console.log('Payment completed. OrderID:', completedOrderId);
+        // Navigate to result page — the actual payment status will be
+        // confirmed by the webhook, so we poll the DB on the result page
+        navigate('/payment-result', {
+          state: { orderId: completedOrderId, paymentId: paymentData?.id },
+        });
       };
 
-      Object.entries(fields).forEach(([key, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      });
+      payhere.onDismissed = function onDismissed() {
+        console.log('Payment dismissed by user');
+        toast.error('Payment was cancelled. You can try again.');
+        setLoading(false);
+      };
 
-      document.body.appendChild(form);
-      form.submit();
+      payhere.onError = function onError(error: string) {
+        console.error('PayHere error:', error);
+        toast.error('Payment error: ' + error);
+        setLoading(false);
+      };
+
+      if (!data) throw new Error('No data received from edge function');
+
+      // Build the payment object for the JS SDK
+      const payment = {
+        sandbox: true, // Sandbox mode for testing
+        merchant_id: data.merchant_id,
+        return_url: undefined,
+        cancel_url: undefined,
+        notify_url: data.notify_url,
+        order_id: data.order_id,
+        items: data.items,
+        amount: data.amount,
+        currency: data.currency,
+        hash: data.hash,
+        first_name: user.id === 'anonymous' ? 'Donor' : (user.user_metadata?.full_name?.split(' ')[0] || 'User'),
+        last_name: user.id === 'anonymous' ? '' : (user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || ''),
+        email: user.id === 'anonymous' ? 'donor@anonymous.com' : user.email,
+        phone: user.user_metadata?.phone || '0000000000',
+        address: 'N/A',
+        city: 'Colombo',
+        country: 'Sri Lanka',
+        custom_1: relatedId ? `${type}:${relatedId}` : type,
+        custom_2: paymentData?.id || '',
+      };
+
+      // Open the PayHere payment popup
+      payhere.startPayment(payment);
+
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Failed to initiate payment');
@@ -135,7 +148,7 @@ export default function Payment() {
         <CardHeader>
           <CardTitle>Complete Payment</CardTitle>
           <CardDescription>
-            You will be redirected to PayHere to complete your payment
+            Pay securely via PayHere — the payment form will open as a popup on this page
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -157,12 +170,13 @@ export default function Payment() {
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Proceed to PayHere
+            {loading ? 'Processing...' : 'Pay with PayHere'}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Secure payment powered by PayHere
-          </p>
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <ShieldCheck className="h-4 w-4" />
+            <p>Secure payment powered by PayHere</p>
+          </div>
         </CardContent>
       </Card>
     </div>

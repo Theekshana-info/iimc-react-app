@@ -1,5 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { crypto } from "https://deno.land/std@0.224.0/crypto/crypto.ts";
+import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,32 +12,41 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { amount, orderId, itemName, returnUrl, cancelUrl, notifyUrl } = await req.json();
+    const { amount, orderId, itemName, notifyUrl } = await req.json();
 
     const merchantId = Deno.env.get('PAYHERE_MERCHANT_ID')!;
     const merchantSecret = Deno.env.get('PAYHERE_MERCHANT_SECRET')!;
     const currency = 'LKR';
 
-    // Create SHA-1 hash
-    const hashString = `${merchantId}${orderId}${amount}${currency}${merchantSecret}`;
-    const encoder = new TextEncoder();
-    const data = encoder.encode(hashString);
-    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashValue = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    // Format amount to exactly 2 decimal places, no commas
+    // PayHere JS SDK sample: parseFloat(amount).toLocaleString('en-us', {minimumFractionDigits: 2}).replaceAll(',', '')
+    const amountFormatted = parseFloat(amount)
+      .toLocaleString('en-us', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      .replaceAll(',', '');
 
-    console.log('PayHere order created:', { orderId, amount, hashValue });
+    // Generate hash per PayHere docs (using their recommended CryptoJS approach):
+    // hash = UPPER(MD5(merchant_id + order_id + amount + currency + UPPER(MD5(merchant_secret))))
+    const hashedSecret = CryptoJS.MD5(merchantSecret).toString().toUpperCase();
+    const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
+    const hash = CryptoJS.MD5(hashString).toString().toUpperCase();
+
+    console.log('PayHere order created:', {
+      merchantId,
+      orderId,
+      amountFormatted,
+      currency,
+      hash: hash.substring(0, 8) + '...',  // Log partial hash for debugging
+      secretLength: merchantSecret.length,
+    });
 
     return new Response(
       JSON.stringify({
         merchant_id: merchantId,
         order_id: orderId,
-        amount: amount.toFixed(2),
+        amount: amountFormatted,
         currency: currency,
-        hash: hashValue,
+        hash: hash,
         items: itemName,
-        return_url: returnUrl,
-        cancel_url: cancelUrl,
         notify_url: notifyUrl,
       }),
       {
