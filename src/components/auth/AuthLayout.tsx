@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+
 import iimcLogo from '@/assets/iimc-logo.jpg';
 
 interface AuthLayoutProps {
@@ -9,9 +9,7 @@ interface AuthLayoutProps {
 export const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 gradient-hero relative">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
+
       
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">

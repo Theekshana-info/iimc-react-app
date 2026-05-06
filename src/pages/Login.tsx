@@ -25,7 +25,7 @@ export default function Login() {
   const location = useLocation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
+
 
   useEffect(() => {
     // If already logged in, redirect away
@@ -44,7 +44,6 @@ export default function Login() {
     resolver: zodResolver(signInSchema),
   });
 
-  const emailValue = watch('email');
 
   const onSubmit = async (data: SignInValues) => {
     try {
@@ -74,25 +73,6 @@ export default function Login() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!emailValue || errors.email) {
-      toast.error('Please enter a valid email address first');
-      return;
-    }
-    
-    try {
-      setResetLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(emailValue, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      toast.success('Password reset link sent! Check your email.');
-    } catch (error) {
-      if (error instanceof Error) toast.error(error.message);
-    } finally {
-      setResetLoading(false);
-    }
-  };
 
   return (
     <AuthLayout>
@@ -122,14 +102,12 @@ export default function Login() {
               </p>
             )}
             <div className="text-right mt-1">
-              <button
-                type="button"
+              <Link
+                to="/forgot-password"
                 className="text-xs text-primary hover:underline font-medium"
-                onClick={handleForgotPassword}
-                disabled={resetLoading || loading}
               >
-                {resetLoading ? 'Sending link...' : 'Forgot password?'}
-              </button>
+                Forgot password?
+              </Link>
             </div>
           </div>
 
