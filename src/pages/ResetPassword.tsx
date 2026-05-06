@@ -36,6 +36,9 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Check initial hash
+    const hasRecoveryHash = window.location.hash.includes('type=recovery');
+
     // Listen for the PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
@@ -43,19 +46,19 @@ export default function ResetPassword() {
       }
     });
 
-    // Also check hash for type=recovery or type=invite
-    if (window.location.hash.includes('type=recovery')) {
+    if (hasRecoveryHash) {
       setReady(true);
     }
 
-    // If an already logged in user accesses this without a recovery token, redirect
-    if (user && !window.location.hash.includes('type=recovery')) {
-      const from = (location.state as any)?.from?.pathname || '/profile';
+    // If an already logged in user accesses this without a recovery token, redirect.
+    // We use `!ready` and `!hasRecoveryHash` to ensure we don't redirect users who just clicked the email link.
+    if (user && !hasRecoveryHash && !ready) {
+      const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
 
     return () => subscription.unsubscribe();
-  }, [user, navigate, location]);
+  }, [user, navigate, location, ready]);
 
   const {
     register,

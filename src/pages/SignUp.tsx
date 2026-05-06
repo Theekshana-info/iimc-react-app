@@ -43,7 +43,7 @@ export default function SignUp() {
   useEffect(() => {
     // If already logged in, redirect away
     if (user) {
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
   }, [user, navigate, location]);

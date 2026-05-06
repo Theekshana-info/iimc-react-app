@@ -32,6 +32,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (profile?.theme) {
           setTheme(profile.theme as Theme);
           document.documentElement.classList.toggle('dark', profile.theme === 'dark');
+        } else {
+          setTheme('light');
+          document.documentElement.classList.remove('dark');
         }
       } else {
         // Load from localStorage for non-logged-in users
@@ -39,6 +42,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (savedTheme) {
           setTheme(savedTheme);
           document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+        } else {
+          setTheme('light');
+          document.documentElement.classList.remove('dark');
         }
       }
     };

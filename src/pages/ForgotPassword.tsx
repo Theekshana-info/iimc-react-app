@@ -28,7 +28,7 @@ export default function ForgotPassword() {
   useEffect(() => {
     // If already logged in, redirect away
     if (user) {
-      const from = (location.state as any)?.from?.pathname || '/profile';
+      const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
   }, [user, navigate, location]);
