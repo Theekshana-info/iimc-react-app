@@ -33,7 +33,7 @@ export default function Profile() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        navigate('/auth', { state: { from: { pathname: '/profile' } } });
+        navigate('/login', { state: { from: { pathname: '/profile' } } });
         return;
       }
 

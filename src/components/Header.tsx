@@ -4,18 +4,17 @@ import { Button } from './ui/button';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
 import iimcLogo from '@/assets/iimc-logo.jpg';
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    const checkAdmin = async () => {
       if (user) {
         const { data: roles } = await supabase
           .from('user_roles')
@@ -29,17 +28,11 @@ export function Header() {
       }
     };
 
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkUser();
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    checkAdmin();
+  }, [user]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate('/');
   };
 
@@ -113,7 +106,7 @@ export function Header() {
               </Button>
             </>
           ) : (
-            <Button size="sm" onClick={() => navigate('/auth')}>
+            <Button size="sm" onClick={() => navigate('/login')}>
               Sign In
             </Button>
           )}
@@ -184,7 +177,7 @@ export function Header() {
                 <Button
                   size="sm"
                   className="w-full"
-                  onClick={() => { navigate('/auth'); setIsOpen(false); }}
+                  onClick={() => { navigate('/login'); setIsOpen(false); }}
                 >
                   Sign In
                 </Button>

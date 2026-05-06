@@ -69,7 +69,7 @@ export default function EventDetail() {
 
   const handleRegister = async () => {
     if (!user) {
-      navigate('/auth', { state: { from: { pathname: `/events/${id}` } } });
+      navigate('/login', { state: { from: { pathname: `/events/${id}` } } });
       return;
     }
 

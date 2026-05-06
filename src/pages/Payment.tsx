@@ -26,7 +26,7 @@ export default function Payment() {
       }
 
       if (!user) {
-        navigate('/auth', { state: { from: { pathname: '/payment' } } });
+        navigate('/login', { state: { from: { pathname: '/payment' } } });
         return;
       }
 

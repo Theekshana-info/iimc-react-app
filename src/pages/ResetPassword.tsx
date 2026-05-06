@@ -49,7 +49,7 @@ export default function ResetPassword() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       toast.success('Password updated successfully!');
-      navigate('/auth');
+      navigate('/login');
     } catch (error) {
       if (error instanceof z.ZodError) {
         error.errors.forEach((err) => toast.error(err.message));
@@ -72,7 +72,7 @@ export default function ResetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => navigate('/auth')}>
+            <Button className="w-full" onClick={() => navigate('/login')}>
               Back to Sign In
             </Button>
           </CardContent>

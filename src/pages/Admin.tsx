@@ -40,7 +40,7 @@ export default function Admin() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        navigate('/auth', { state: { from: { pathname: '/admin' } } });
+        navigate('/login', { state: { from: { pathname: '/admin' } } });
         return;
       }
 
