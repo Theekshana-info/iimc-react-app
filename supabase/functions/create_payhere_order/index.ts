@@ -1,4 +1,3 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
 
 const corsHeaders = {
@@ -13,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { amount, orderId, itemName, notifyUrl, userId, paymentType, eventId, donationId } = await req.json();
+    const { amount, orderId, itemName, notifyUrl } = await req.json();
 
     const merchantId = Deno.env.get('PAYHERE_MERCHANT_ID')!;
     const merchantSecret = Deno.env.get('PAYHERE_MERCHANT_SECRET')!;
@@ -30,32 +29,6 @@ Deno.serve(async (req) => {
     const hashedSecret = CryptoJS.MD5(merchantSecret).toString().toUpperCase();
     const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
     const hash = CryptoJS.MD5(hashString).toString().toUpperCase();
-
-    // Log pending payment attempt
-    if (userId || paymentType) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-
-      const { error: attemptError } = await supabaseAdmin
-        .from('payment_attempts')
-        .insert({
-          user_id: userId || null,
-          type: paymentType || 'donation',
-          event_id: eventId || null,
-          amount: parseFloat(amount),
-          currency,
-          status: 'pending',
-          payhere_order_id: orderId,
-          donation_id: donationId || null,
-        });
-
-      if (attemptError) {
-        console.error('Error logging pending payment attempt:', attemptError);
-      } else {
-        console.log('Pending payment attempt logged for order:', orderId);
-      }
-    }
 
     console.log('PayHere order created:', {
       merchantId,

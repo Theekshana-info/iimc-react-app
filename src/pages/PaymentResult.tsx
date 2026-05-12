@@ -16,6 +16,7 @@ export default function PaymentResult() {
   const eventId = location.state?.eventId;
   const donationId = location.state?.donationId;
   const paymentInitiatedAt = location.state?.paymentInitiatedAt;
+  const attemptOrderId = location.state?.attemptOrderId;
 
   const [status, setStatus] = useState<PaymentStatus>(
     isPollingInitial ? 'polling' : 'failed'
@@ -32,7 +33,19 @@ export default function PaymentResult() {
       setPollCount(prev => {
         if (prev >= MAX_POLLS) {
           clearInterval(pollInterval);
-          // After max polls, assume still processing — show a generic message
+          // Polling timed out — payment was likely declined.
+          // Update the pending attempt to 'failed' so admin sees it
+          if (attemptOrderId) {
+            supabase
+              .from('payment_attempts')
+              .update({ status: 'failed', failure_reason: 'Payment not confirmed after polling' })
+              .eq('payhere_order_id', attemptOrderId)
+              .eq('status', 'pending')
+              .then(({ error }) => {
+                if (error) console.error('Error updating attempt on timeout:', error);
+                else console.log('Pending attempt marked as failed after timeout');
+              });
+          }
           setStatus('failed');
           return prev;
         }

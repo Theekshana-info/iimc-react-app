@@ -16,20 +16,22 @@ export default function Payment() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       
-      // If anonymous donation, skip auth check
+      // If anonymous donation and no user logged in, allow it
       if (isAnonymous && type === 'donation') {
-        setUser({ id: 'anonymous' } as any);
+        // Still use the real auth user if logged in (for payment attempt tracking)
+        // Only fall back to 'anonymous' if truly not logged in
+        setUser(authUser || { id: 'anonymous' } as any);
         return;
       }
 
-      if (!user) {
+      if (!authUser) {
         navigate('/login', { state: { from: { pathname: '/payment' } } });
         return;
       }
 
-      setUser(user);
+      setUser(authUser);
     };
 
     checkAuth();
@@ -48,20 +50,42 @@ export default function Payment() {
     try {
       const orderId = `${type}_${Date.now()}`;
       const notifyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payhere_webhook_handler`;
+      // Use the real user ID for payment logging, null only if truly anonymous (no auth session)
       const actualUserId = user.id === 'anonymous' ? null : user.id;
 
+      // ─── Log pending payment attempt to DB (admin can see it immediately) ───
+      // NOTE: We do NOT use .select() because there's no SELECT policy for regular users.
+      // Instead, we use orderId (payhere_order_id) to match the record for later updates.
+      try {
+        const { error: attemptError } = await supabase
+          .from('payment_attempts')
+          .insert({
+            user_id: actualUserId,
+            type: type,
+            event_id: type === 'event_registration' ? eventId : null,
+            amount: parseFloat(amount),
+            currency: 'LKR',
+            status: 'pending',
+            payhere_order_id: orderId,
+            donation_id: type === 'donation' ? donationId : null,
+          });
+
+        if (attemptError) {
+          console.error('Error logging pending payment attempt:', attemptError);
+        } else {
+          console.log('Pending payment attempt logged with orderId:', orderId);
+        }
+      } catch (e) {
+        console.error('Failed to log payment attempt:', e);
+      }
+
       // Call edge function to create PayHere order (generates hash server-side)
-      // Also logs a pending payment attempt
       const { data, error } = await supabase.functions.invoke('create_payhere_order', {
         body: {
           amount,
           orderId,
           itemName: description || type,
           notifyUrl,
-          userId: actualUserId,
-          paymentType: type,
-          eventId: type === 'event_registration' ? eventId : null,
-          donationId: type === 'donation' ? donationId : null,
         },
       });
 
@@ -75,19 +99,41 @@ export default function Payment() {
       payhere.onCompleted = function onCompleted(completedOrderId: string) {
         console.log('Payment completed. OrderID:', completedOrderId);
         navigate('/payment-result', {
-          state: { paymentType: type, eventId, donationId, isPolling: true, paymentInitiatedAt },
+          state: {
+            paymentType: type, eventId, donationId,
+            isPolling: true, paymentInitiatedAt,
+            attemptOrderId: orderId, attemptUserId: actualUserId,
+          },
         });
       };
 
       payhere.onDismissed = function onDismissed() {
         console.log('Payment dismissed by user');
+        // Update the payment attempt to 'cancelled' using orderId as the match key
+        supabase
+          .from('payment_attempts')
+          .update({ status: 'cancelled', failure_reason: 'User dismissed payment popup' })
+          .eq('payhere_order_id', orderId)
+          .then(({ error }) => {
+            if (error) console.error('Error updating attempt to cancelled:', error);
+            else console.log('Payment attempt updated to cancelled');
+          });
         toast.error('Payment was cancelled. You can try again.');
         setLoading(false);
       };
 
-      payhere.onError = function onError(error: string) {
-        console.error('PayHere error:', error);
-        toast.error('Payment error: ' + error);
+      payhere.onError = function onError(errorMsg: string) {
+        console.error('PayHere error:', errorMsg);
+        // Update the payment attempt to 'failed' using orderId as the match key
+        supabase
+          .from('payment_attempts')
+          .update({ status: 'failed', failure_reason: errorMsg || 'PayHere SDK error' })
+          .eq('payhere_order_id', orderId)
+          .then(({ error }) => {
+            if (error) console.error('Error updating attempt to failed:', error);
+            else console.log('Payment attempt updated to failed');
+          });
+        toast.error('Payment error: ' + errorMsg);
         setLoading(false);
       };
 
