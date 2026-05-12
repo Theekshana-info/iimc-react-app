@@ -13,7 +13,8 @@ import BankDetailsManager from '@/components/admin/BankDetailsManager';
 import { HomeMessagesManager } from '@/components/admin/HomeMessagesManager';
 import { SocialLinksManager } from '@/components/admin/SocialLinksManager';
 import { ActivitiesManager } from '@/components/admin/ActivitiesManager';
-import { Calendar, BookOpen, Users, MessageSquare, Heart, GraduationCap, Building2 } from 'lucide-react';
+import { PaymentAttemptsManager } from '@/components/admin/PaymentAttemptsManager';
+import { Calendar, BookOpen, Users, MessageSquare, Heart, GraduationCap, Building2, FileText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const adminTabs = [
@@ -27,6 +28,7 @@ const adminTabs = [
   { value: 'activities', label: 'Activities', icon: BookOpen },
   { value: 'home-messages', label: 'Home Msg', icon: MessageSquare },
   { value: 'social-links', label: 'Social', icon: Users },
+  { value: 'payment-log', label: 'Payment Log', icon: FileText },
 ];
 
 export default function Admin() {
@@ -85,6 +87,7 @@ export default function Admin() {
       activities: { title: 'Activities Manager', desc: 'Create and manage activity posts', component: <ActivitiesManager /> },
       'home-messages': { title: 'Home Messages', desc: 'Manage homepage announcements', component: <HomeMessagesManager /> },
       'social-links': { title: 'Social Links', desc: 'Manage footer social media links', component: <SocialLinksManager /> },
+      'payment-log': { title: 'Payment Attempts Log', desc: 'View all payment attempts including pending, failed, and successful transactions', component: <PaymentAttemptsManager /> },
     };
 
     const item = contentMap[activeTab];
@@ -129,7 +132,7 @@ export default function Admin() {
         {/* Desktop: tab bar */}
         <div className="hidden lg:block">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10 gap-1 rounded-lg p-1 bg-muted/40">
+            <TabsList className="grid w-full grid-cols-11 gap-1 rounded-lg p-1 bg-muted/40">
               {adminTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1.5 text-xs border-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-md font-medium">
                   <tab.icon className="h-3.5 w-3.5" />

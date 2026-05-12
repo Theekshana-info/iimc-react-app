@@ -12,8 +12,7 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  const { amount, type, relatedId: passedRelatedId, description, isAnonymous, donationId } = location.state || {};
-  const relatedId = passedRelatedId || donationId;
+  const { amount, type, eventId, description, isAnonymous, donationId } = location.state || {};
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -49,26 +48,34 @@ export default function Payment() {
     try {
       const orderId = `${type}_${Date.now()}`;
       const notifyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payhere_webhook_handler`;
+      const actualUserId = user.id === 'anonymous' ? null : user.id;
 
       // Call edge function to create PayHere order (generates hash server-side)
+      // Also logs a pending payment attempt
       const { data, error } = await supabase.functions.invoke('create_payhere_order', {
         body: {
           amount,
           orderId,
           itemName: description || type,
           notifyUrl,
+          userId: actualUserId,
+          paymentType: type,
+          eventId: type === 'event_registration' ? eventId : null,
+          donationId: type === 'donation' ? donationId : null,
         },
       });
 
       if (error) throw error;
 
       // ─── PayHere JS SDK: Onsite Checkout Popup ───
+      // Record when payment was initiated so polling only finds records from THIS attempt
+      const paymentInitiatedAt = new Date().toISOString();
 
       // Set up event handlers BEFORE starting payment
       payhere.onCompleted = function onCompleted(completedOrderId: string) {
         console.log('Payment completed. OrderID:', completedOrderId);
         navigate('/payment-result', {
-          state: { relatedId, paymentType: type, isPolling: true },
+          state: { paymentType: type, eventId, donationId, isPolling: true, paymentInitiatedAt },
         });
       };
 
@@ -85,6 +92,14 @@ export default function Payment() {
       };
 
       if (!data) throw new Error('No data received from edge function');
+
+      // Build custom_1: "type:eventId" for event registrations, "donation:donationId" for donations
+      let custom1 = type;
+      if (type === 'event_registration' && eventId) {
+        custom1 = `event_registration:${eventId}`;
+      } else if (type === 'donation' && donationId) {
+        custom1 = `donation:${donationId}`;
+      }
 
       // Build the payment object for the JS SDK
       const payment = {
@@ -105,8 +120,8 @@ export default function Payment() {
         address: 'N/A',
         city: 'Colombo',
         country: 'Sri Lanka',
-        custom_1: relatedId ? `${type}:${relatedId}` : type,
-        custom_2: user.id === 'anonymous' ? '' : user.id,
+        custom_1: custom1,
+        custom_2: actualUserId || '',
       };
 
       // Open the PayHere payment popup

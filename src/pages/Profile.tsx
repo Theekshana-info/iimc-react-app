@@ -52,12 +52,13 @@ export default function Profile() {
         setPhone(profileData.phone || '');
       }
 
-      // Load user's donation history
+      // Load user's donation history — only show completed/successful payments
       const { data: paymentData } = await supabase
         .from('payments')
         .select('*')
         .eq('user_id', user.id)
         .eq('payment_type', 'donation')
+        .eq('status', 'completed')
         .order('created_at', { ascending: false });
 
       if (paymentData) {
@@ -203,7 +204,7 @@ export default function Profile() {
               <CardHeader>
                 <CardTitle>Donation History</CardTitle>
                 <CardDescription>
-                  View all your contributions to IIMC
+                  View all your successful contributions to IIMC
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -227,48 +228,9 @@ export default function Profile() {
                               {format(new Date(donation.created_at), 'PPP')}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={
-                                donation.status === 'paid'
-                                  ? 'default'
-                                  : donation.status === 'pending'
-                                    ? 'secondary'
-                                    : 'outline'
-                              }
-                            >
-                              {donation.status}
-                            </Badge>
-                            {donation.status === 'pending' && (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={async () => {
-                                  if (confirm('Delete this pending donation?')) {
-                                    const { error } = await supabase
-                                      .from('payments')
-                                      .delete()
-                                      .eq('id', donation.id);
-
-                                    if (error) {
-                                      toast.error('Failed to delete donation');
-                                    } else {
-                                      toast.success('Pending donation deleted');
-                                      const { data } = await supabase
-                                        .from('payments')
-                                        .select('*')
-                                        .eq('user_id', user.id)
-                                        .eq('payment_type', 'donation')
-                                        .order('created_at', { ascending: false });
-                                      setDonations(data || []);
-                                    }
-                                  }
-                                }}
-                              >
-                                Delete
-                              </Button>
-                            )}
-                          </div>
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                            Completed
+                          </Badge>
                         </div>
                       </Card>
                     ))}

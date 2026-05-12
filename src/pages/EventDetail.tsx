@@ -15,7 +15,6 @@ export default function EventDetail() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
-  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -35,7 +34,8 @@ export default function EventDetail() {
     },
   });
 
-  const { data: existingRegistration, refetch: refetchRegistration } = useQuery({
+  // Only check for PAID registrations — pending/incomplete are invisible to users
+  const { data: existingRegistration } = useQuery({
     queryKey: ['event-registration', id, user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -44,6 +44,7 @@ export default function EventDetail() {
         .select('*')
         .eq('event_id', id)
         .eq('user_id', user.id)
+        .eq('status', 'paid')
         .maybeSingle();
 
       if (error) throw error;
@@ -51,8 +52,8 @@ export default function EventDetail() {
     },
   });
 
-  // Count all confirmed (paid or pending) registrations for this event
-  const { data: registrationCount, refetch: refetchCount } = useQuery({
+  // Count only PAID registrations for capacity calculation
+  const { data: registrationCount } = useQuery({
     queryKey: ['event-registration-count', id],
     enabled: !!id,
     queryFn: async () => {
@@ -60,63 +61,56 @@ export default function EventDetail() {
         .from('event_registrations')
         .select('*', { count: 'exact', head: true })
         .eq('event_id', id)
-        .in('status', ['pending', 'paid']);
+        .eq('status', 'paid');
 
       if (error) throw error;
       return count ?? 0;
     },
   });
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     if (!user) {
       navigate('/login', { state: { from: { pathname: `/events/${id}` } } });
       return;
     }
 
-    setRegistering(true);
+    // For free events, create a paid registration directly
+    if (!event.price || event.price === 0) {
+      handleFreeRegistration();
+      return;
+    }
 
+    // For paid events, navigate to payment — NO registration created yet
+    navigate('/payment', {
+      state: {
+        amount: event.price,
+        type: 'event_registration',
+        eventId: id,
+        description: `Registration for ${event.title}`,
+      },
+    });
+  };
+
+  const handleFreeRegistration = async () => {
     try {
-      // Create registration
-      const { data: registration, error: regError } = await supabase
+      const { error } = await supabase
         .from('event_registrations')
         .insert({
           event_id: id,
           user_id: user.id,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (regError) throw regError;
-
-      // If event has a price, navigate to payment
-      if (event.price && event.price > 0) {
-        navigate('/payment', {
-          state: {
-            amount: event.price,
-            type: 'event_registration',
-            relatedId: registration.id,
-            description: `Registration for ${event.title}`,
-          },
+          status: 'paid',
         });
-      } else {
-        // Free event - mark as paid immediately
-        await supabase
-          .from('event_registrations')
-          .update({ status: 'paid' })
-          .eq('id', registration.id);
 
-        toast.success('Successfully registered for event!');
-        setShowRegisterDialog(false);
-        refetchCount();
-        refetchRegistration();
-      }
+      if (error) throw error;
+
+      toast.success('Successfully registered for event!');
+      setShowRegisterDialog(false);
+      // Refresh the queries
+      window.location.reload();
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
       }
-    } finally {
-      setRegistering(false);
     }
   };
 
@@ -136,6 +130,8 @@ export default function EventDetail() {
       </div>
     );
   }
+
+  const isFull = event.capacity && (registrationCount ?? 0) >= event.capacity;
 
   return (
     <div className="min-h-screen py-20">
@@ -207,35 +203,10 @@ export default function EventDetail() {
             </div>
 
             {existingRegistration ? (
-              <div className="space-y-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="text-center">
-                    You are already registered for this event
-                    <span className="ml-2 font-semibold">
-                      (Status: {existingRegistration.status})
-                    </span>
-                  </p>
-                </div>
-                {existingRegistration.status === 'pending' && event.price && event.price > 0 && (
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={() => {
-                      navigate('/payment', {
-                        state: {
-                          amount: event.price,
-                          type: 'event_registration',
-                          relatedId: existingRegistration.id,
-                          description: `Registration for ${event.title}`,
-                        },
-                      });
-                    }}
-                  >
-                    Complete Payment
-                  </Button>
-                )}
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-center p-4 rounded-lg">
+                <p className="font-semibold">✓ You are registered for this event</p>
               </div>
-            ) : event.capacity && (registrationCount ?? 0) >= event.capacity ? (
+            ) : isFull ? (
               <div className="bg-destructive/10 border border-destructive/30 text-destructive text-center p-4 rounded-lg">
                 <p className="font-semibold">This event is fully booked</p>
                 <p className="text-sm mt-1">All {event.capacity} spots have been taken.</p>
@@ -276,9 +247,8 @@ export default function EventDetail() {
               <Button
                 className="flex-1"
                 onClick={handleRegister}
-                disabled={registering}
               >
-                {registering ? 'Processing...' : 'Confirm'}
+                Confirm
               </Button>
             </div>
           </DialogContent>

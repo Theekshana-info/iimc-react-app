@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Calendar, CreditCard } from 'lucide-react';
+import { Calendar, CreditCard, CheckCircle } from 'lucide-react';
 
 interface UserActivitiesProps {
     userId: string;
 }
 
 export function UserActivities({ userId }: UserActivitiesProps) {
+    // Only fetch PAID registrations — pending/failed are invisible to users
     const { data: registrations } = useQuery({
         queryKey: ['my-registrations', userId],
         enabled: !!userId,
@@ -22,6 +23,7 @@ export function UserActivities({ userId }: UserActivitiesProps) {
           events (*)
         `)
                 .eq('user_id', userId)
+                .eq('status', 'paid')
                 .order('registered_at', { ascending: false });
 
             if (error) throw error;
@@ -65,12 +67,9 @@ export function UserActivities({ userId }: UserActivitiesProps) {
                                                 format(new Date(registration.events.event_date), 'PPP')}
                                         </div>
                                     </div>
-                                    <Badge variant={
-                                        registration.status === 'paid' ? 'default' :
-                                            registration.status === 'pending' ? 'secondary' :
-                                                'destructive'
-                                    }>
-                                        {registration.status}
+                                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Confirmed
                                     </Badge>
                                 </div>
                             </CardHeader>

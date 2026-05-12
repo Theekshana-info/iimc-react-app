@@ -30,11 +30,10 @@ Deno.serve(async (req) => {
     const statusCode = body.get('status_code')?.toString() || '';
     const receivedMd5sig = body.get('md5sig')?.toString() || '';
     const customFields = body.get('custom_1')?.toString() || '';
-    const paymentMethod = body.get('method')?.toString() || '';
     const statusMessage = body.get('status_message')?.toString() || '';
 
     console.log('PayHere webhook received:', {
-      orderId, paymentId, statusCode, customFields, paymentMethod,
+      orderId, paymentId, statusCode, customFields, statusMessage,
     });
 
     // ─── SECURITY: Verify merchant_id matches ───
@@ -62,88 +61,128 @@ Deno.serve(async (req) => {
 
     // ─── Determine payment status from status_code ───
     // 2 = success, 0 = pending, -1 = canceled, -2 = failed, -3 = chargedback
-    let status: string;
+    let attemptStatus: string;
     switch (statusCode) {
       case '2':
-        status = 'completed';
+        attemptStatus = 'success';
         break;
       case '0':
-        status = 'pending';
+        attemptStatus = 'pending';
         break;
       case '-1':
-        status = 'canceled';
+        attemptStatus = 'cancelled';
         break;
       case '-2':
-        status = 'failed';
+        attemptStatus = 'failed';
         break;
       case '-3':
-        status = 'chargedback';
+        attemptStatus = 'chargeback';
         break;
       default:
-        status = 'unknown';
+        attemptStatus = 'failed';
     }
 
-    // Parse custom fields
-    let relatedType: string | null = null;
-    let relatedId: string | null = null;
+    // Parse custom_1: format is "type:eventId:donationId" or "type:donationId" or just "type"
+    // custom_1 for event_registration: "event_registration:eventId"
+    // custom_1 for donation: "donation:donationId"
+    let paymentType: string = 'donation';
+    let eventId: string | null = null;
+    let donationId: string | null = null;
 
-    if (customFields && customFields.includes(':')) {
-      const [type, id] = customFields.split(':');
-      relatedType = type;
-      relatedId = id;
+    if (customFields) {
+      const parts = customFields.split(':');
+      paymentType = parts[0] || 'donation';
+
+      if (paymentType === 'event_registration' && parts[1]) {
+        eventId = parts[1];
+      } else if (paymentType === 'donation' && parts[1]) {
+        donationId = parts[1];
+      }
     }
 
     const userId = body.get('custom_2')?.toString() || null;
 
-    // Create payment record from webhook directly (no pending state)
-    const { data: paymentData, error: paymentError } = await supabaseAdmin
-      .from('payments')
+    // ─── Log to payment_attempts (ALWAYS, regardless of status) ───
+    const { error: attemptError } = await supabaseAdmin
+      .from('payment_attempts')
       .insert({
-        transaction_id: paymentId,
-        user_id: userId,
+        user_id: userId || null,
+        type: paymentType,
+        event_id: eventId,
         amount: parseFloat(payhereAmount),
         currency: payhereCurrency,
-        status,
-        payment_type: relatedType || 'donation',
-        related_id: relatedId,
-        related_type: relatedType,
-        payment_gateway: 'payhere',
-      })
-      .select()
-      .single();
+        status: attemptStatus,
+        failure_reason: attemptStatus !== 'success' ? (statusMessage || null) : null,
+        payhere_order_id: paymentId || orderId,
+        donation_id: donationId,
+      });
 
-    if (paymentError) {
-      console.error('Error upserting payment:', paymentError);
-      return new Response('ERROR', { status: 500 });
+    if (attemptError) {
+      console.error('Error logging payment attempt:', attemptError);
+    } else {
+      console.log('Payment attempt logged:', { status: attemptStatus, paymentType });
     }
 
-    console.log('Payment record inserted:', { id: paymentData.id, status });
+    // ─── Create payment record (for completed/successful payments) ───
+    if (attemptStatus === 'success') {
+      const { data: paymentData, error: paymentError } = await supabaseAdmin
+        .from('payments')
+        .insert({
+          transaction_id: paymentId,
+          user_id: userId,
+          amount: parseFloat(payhereAmount),
+          currency: payhereCurrency,
+          status: 'completed',
+          payment_type: paymentType,
+          related_id: eventId || donationId,
+          related_type: paymentType,
+          payment_gateway: 'payhere',
+        })
+        .select()
+        .single();
 
-    // If this is a successful event registration payment, update the registration status
-    if (relatedType === 'event_registration' && relatedId && status === 'completed') {
-      const { error: registrationError } = await supabaseAdmin
-        .from('event_registrations')
-        .update({ status: 'paid' })
-        .eq('id', relatedId);
-
-      if (registrationError) {
-        console.error('Error updating registration:', registrationError);
-      } else {
-        console.log('Event registration marked as paid:', relatedId);
+      if (paymentError) {
+        console.error('Error inserting payment:', paymentError);
+        return new Response('ERROR', { status: 500 });
       }
-    }
 
-    // If this is a donation and completed, update the donation record
-    if (relatedType === 'donation' && relatedId && status === 'completed') {
-      const { error: donationError } = await supabaseAdmin
-        .from('donations')
-        .update({ status: 'completed', payment_id: paymentData.id })
-        .eq('id', relatedId);
+      console.log('Payment record created:', { id: paymentData.id });
 
-      if (donationError) {
-        console.error('Error updating donation:', donationError);
-      } else {
-        console.log('Donation marked as completed:', relatedId);
+      // ─── SUCCESS: Create/update event registration (spot allocated NOW) ───
+      // Uses UPSERT to handle the UNIQUE(event_id, user_id) constraint.
+      // If a pending record exists from a previous attempt, it gets updated to 'paid'.
+      if (paymentType === 'event_registration' && eventId && userId) {
+        const { error: registrationError } = await supabaseAdmin
+          .from('event_registrations')
+          .upsert(
+            {
+              event_id: eventId,
+              user_id: userId,
+              status: 'paid',
+              registered_at: new Date().toISOString(),
+            },
+            { onConflict: 'event_id,user_id' }
+          );
+
+        if (registrationError) {
+          console.error('Error creating/updating registration:', registrationError);
+        } else {
+          console.log('Event registration upserted with paid status for event:', eventId);
+        }
+      }
+
+      // ─── SUCCESS: Update donation record ───
+      if (paymentType === 'donation' && donationId) {
+        const { error: donationError } = await supabaseAdmin
+          .from('donations')
+          .update({ status: 'completed', payment_id: paymentData.id })
+          .eq('id', donationId);
+
+        if (donationError) {
+          console.error('Error updating donation:', donationError);
+        } else {
+          console.log('Donation marked as completed:', donationId);
+        }
       }
     }
 

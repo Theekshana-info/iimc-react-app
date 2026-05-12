@@ -447,6 +447,63 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_attempts: {
+        Row: {
+          id: string
+          user_id: string | null
+          type: string
+          event_id: string | null
+          amount: number
+          currency: string | null
+          status: string
+          failure_reason: string | null
+          payhere_order_id: string | null
+          donation_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          type: string
+          event_id?: string | null
+          amount: number
+          currency?: string | null
+          status?: string
+          failure_reason?: string | null
+          payhere_order_id?: string | null
+          donation_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          type?: string
+          event_id?: string | null
+          amount?: number
+          currency?: string | null
+          status?: string
+          failure_reason?: string | null
+          payhere_order_id?: string | null
+          donation_id?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_attempts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
