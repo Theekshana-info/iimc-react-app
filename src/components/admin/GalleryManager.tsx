@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, Trash2, Plus, Image, Video } from 'lucide-react';
 import { z } from 'zod';
 import { GALLERY_CATEGORIES } from '@/hooks/useGalleryItems';
+import { getExtensionFromMime } from '@/lib/fileUtils';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -65,9 +66,14 @@ export const GalleryManager = () => {
     mutationFn: async (item: GalleryItem) => {
       // If image, also delete from storage
       if (item.type === 'image' && item.url.includes('gallery_media')) {
-        const path = item.url.split('/gallery_media/')[1];
+        const path = item.url.split('/gallery_media/')[1]?.split('?')[0];
         if (path) {
-          await supabase.storage.from('gallery_media').remove([path]);
+          // LOW-2: Handle storage deletion errors
+          const { error } = await supabase.storage.from('gallery_media').remove([path]);
+          if (error) {
+            console.error('Storage deletion failed:', error);
+            toast.error('File deleted from database but storage cleanup failed.');
+          }
         }
       }
       const { error } = await supabase.from('gallery_items').delete().eq('id', item.id);
@@ -105,7 +111,9 @@ export const GalleryManager = () => {
           return;
         }
         setUploading(true);
-        const ext = file.name.split('.').pop();
+        // MEDIUM-5: Use MIME type for extension
+        const ext = getExtensionFromMime(file.type);
+        if (!ext) { toast.error('Unsupported file type'); return; }
         const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from('gallery_media').upload(path, file);
         if (uploadErr) throw uploadErr;

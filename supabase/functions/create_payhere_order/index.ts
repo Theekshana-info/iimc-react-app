@@ -1,68 +1,108 @@
+// HIGH-1: Secure create_payhere_order — validates JWT, looks up price server-side
+// MEDIUM-6: CORS restricted to ALLOWED_ORIGIN env var
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'http://localhost:8080',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { amount, orderId, itemName, notifyUrl } = await req.json();
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    const body = await req.json();
+    const { type, eventId, amount, orderId } = body;
+
+    let resolvedAmount: number;
+    let itemName: string;
+    let userId: string | null = null;
+
+    // ─── Authenticate the caller if JWT is present ───
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const supabaseUser = createClient(supabaseUrl, anonKey, {
+        global: { headers: { authorization: authHeader } },
+      });
+      const { data: { user }, error } = await supabaseUser.auth.getUser();
+      if (error || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        });
+      }
+      userId = user.id;
+    } else if (type !== 'donation') {
+      // Non-donation payments MUST be authenticated
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // ─── Resolve amount SERVER-SIDE ───
+    if (type === 'event_registration') {
+      if (!eventId) throw new Error('eventId is required for event registration');
+      const { data: event, error } = await supabaseAdmin
+        .from('events')
+        .select('price, title')
+        .eq('id', eventId)
+        .single();
+      if (error || !event) throw new Error('Event not found');
+      if (!event.price || event.price <= 0) throw new Error('Event is free — use free registration flow');
+      resolvedAmount = event.price;
+      itemName = `Registration: ${event.title}`;
+    } else if (type === 'donation') {
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        throw new Error('Invalid donation amount');
+      }
+      resolvedAmount = parseFloat(amount);
+      itemName = 'Donation to IIMC';
+    } else {
+      throw new Error('Invalid payment type');
+    }
 
     const merchantId = Deno.env.get('PAYHERE_MERCHANT_ID')!;
     const merchantSecret = Deno.env.get('PAYHERE_MERCHANT_SECRET')!;
     const currency = 'LKR';
 
-    // Format amount to exactly 2 decimal places, no commas
-    // PayHere JS SDK sample: parseFloat(amount).toLocaleString('en-us', {minimumFractionDigits: 2}).replaceAll(',', '')
-    const amountFormatted = parseFloat(amount)
+    const amountFormatted = resolvedAmount
       .toLocaleString('en-us', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       .replaceAll(',', '');
 
-    // Generate hash per PayHere docs (using their recommended CryptoJS approach):
-    // hash = UPPER(MD5(merchant_id + order_id + amount + currency + UPPER(MD5(merchant_secret))))
     const hashedSecret = CryptoJS.MD5(merchantSecret).toString().toUpperCase();
     const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
     const hash = CryptoJS.MD5(hashString).toString().toUpperCase();
 
-    console.log('PayHere order created:', {
-      merchantId,
-      orderId,
-      amountFormatted,
-      currency,
-      hash: hash.substring(0, 8) + '...',  // Log partial hash for debugging
-      secretLength: merchantSecret.length,
-    });
+    // notifyUrl is ALWAYS hardcoded server-side — never from client
+    const notifyUrl = `${supabaseUrl}/functions/v1/payhere_webhook_handler`;
 
     return new Response(
       JSON.stringify({
         merchant_id: merchantId,
         order_id: orderId,
         amount: amountFormatted,
-        currency: currency,
-        hash: hash,
+        currency,
+        hash,
         items: itemName,
         notify_url: notifyUrl,
+        resolved_amount: resolvedAmount,
+        user_id: userId,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
-    console.error('Error creating PayHere order:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error creating PayHere order:', message);
     return new Response(
       JSON.stringify({ error: message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

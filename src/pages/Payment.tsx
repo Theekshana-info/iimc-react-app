@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export default function Payment() {
   const location = useLocation();
@@ -20,8 +20,6 @@ export default function Payment() {
       
       // If anonymous donation and no user logged in, allow it
       if (isAnonymous && type === 'donation') {
-        // Still use the real auth user if logged in (for payment attempt tracking)
-        // Only fall back to 'anonymous' if truly not logged in
         setUser(authUser || { id: 'anonymous' } as any);
         return;
       }
@@ -42,20 +40,29 @@ export default function Payment() {
     }
   }, [navigate, amount, type, isAnonymous]);
 
+  // HIGH-9: Check if email is verified (anonymous donors are exempt)
+  const isAuthenticated = user && user.id !== 'anonymous';
+  const isEmailVerified = !isAuthenticated || !!user?.email_confirmed_at;
+
   const handlePayment = async () => {
     if (!user) return;
+
+    // HIGH-9: Block payment for unverified authenticated users
+    if (isAuthenticated && !user.email_confirmed_at) {
+      toast.error('Please verify your email address before making a payment.', {
+        description: 'Check your inbox for a verification link, or click "Verify Now" in the banner above.',
+        duration: 6000,
+      });
+      return;
+    }
 
     setLoading(true);
 
     try {
       const orderId = `${type}_${Date.now()}`;
-      const notifyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payhere_webhook_handler`;
-      // Use the real user ID for payment logging, null only if truly anonymous (no auth session)
       const actualUserId = user.id === 'anonymous' ? null : user.id;
 
       // ─── Log pending payment attempt to DB (admin can see it immediately) ───
-      // NOTE: We do NOT use .select() because there's no SELECT policy for regular users.
-      // Instead, we use orderId (payhere_order_id) to match the record for later updates.
       try {
         const { error: attemptError } = await supabase
           .from('payment_attempts')
@@ -79,19 +86,19 @@ export default function Payment() {
         console.error('Failed to log payment attempt:', e);
       }
 
-      // Call edge function to create PayHere order (generates hash server-side)
+      // HIGH-1: Call edge function — amount is resolved SERVER-SIDE for events
       const { data, error } = await supabase.functions.invoke('create_payhere_order', {
         body: {
-          amount,
+          type,
+          eventId: type === 'event_registration' ? eventId : undefined,
+          amount: type === 'donation' ? amount : undefined, // Only pass amount for donations
           orderId,
-          itemName: description || type,
-          notifyUrl,
         },
       });
 
       if (error) throw error;
+      if (!data) throw new Error('No data received from edge function');
 
-      // ─── PayHere JS SDK: Onsite Checkout Popup ───
       // Record when payment was initiated so polling only finds records from THIS attempt
       const paymentInitiatedAt = new Date().toISOString();
 
@@ -109,7 +116,6 @@ export default function Payment() {
 
       payhere.onDismissed = function onDismissed() {
         console.log('Payment dismissed by user');
-        // Update the payment attempt to 'cancelled' using orderId as the match key
         supabase
           .from('payment_attempts')
           .update({ status: 'cancelled', failure_reason: 'User dismissed payment popup' })
@@ -124,7 +130,6 @@ export default function Payment() {
 
       payhere.onError = function onError(errorMsg: string) {
         console.error('PayHere error:', errorMsg);
-        // Update the payment attempt to 'failed' using orderId as the match key
         supabase
           .from('payment_attempts')
           .update({ status: 'failed', failure_reason: errorMsg || 'PayHere SDK error' })
@@ -137,9 +142,7 @@ export default function Payment() {
         setLoading(false);
       };
 
-      if (!data) throw new Error('No data received from edge function');
-
-      // Build custom_1: "type:eventId" for event registrations, "donation:donationId" for donations
+      // Build custom_1 for webhook
       let custom1 = type;
       if (type === 'event_registration' && eventId) {
         custom1 = `event_registration:${eventId}`;
@@ -149,7 +152,8 @@ export default function Payment() {
 
       // Build the payment object for the JS SDK
       const payment = {
-        sandbox: true, // Sandbox mode for testing
+        // CRITICAL-2: Environment-controlled sandbox mode
+        sandbox: import.meta.env.VITE_PAYHERE_SANDBOX === 'true',
         merchant_id: data.merchant_id,
         return_url: undefined,
         cancel_url: undefined,
@@ -170,7 +174,6 @@ export default function Payment() {
         custom_2: actualUserId || '',
       };
 
-      // Open the PayHere payment popup
       payhere.startPayment(payment);
 
     } catch (error) {
@@ -205,14 +208,43 @@ export default function Payment() {
             </div>
           </div>
 
+          {/* HIGH-9: Email verification gate */}
+          {!isEmailVerified && (
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200 text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>You must verify your email address before making a payment.</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 text-xs border-yellow-400"
+                onClick={async () => {
+                  const { error } = await supabase.auth.resend({
+                    type: 'signup',
+                    email: user.email!,
+                    options: { emailRedirectTo: `${window.location.origin}/login` },
+                  });
+                  if (error) toast.error('Failed to send verification email.');
+                  else toast.success('Verification email sent! Check your inbox.');
+                }}
+              >
+                Resend Verification Email
+              </Button>
+            </div>
+          )}
+
           <Button
             className="w-full"
             size="lg"
             onClick={handlePayment}
-            disabled={loading}
+            disabled={loading || !isEmailVerified}
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? 'Processing...' : 'Pay with PayHere'}
+            {!isEmailVerified
+              ? 'Verify Email to Pay'
+              : loading
+              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
+              : 'Pay with PayHere'}
           </Button>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

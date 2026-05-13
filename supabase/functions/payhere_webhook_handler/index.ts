@@ -1,13 +1,13 @@
+// Fixes: HIGH-2 (capacity race condition via RPC), HIGH-3 (upsert payments), MEDIUM-6 (CORS)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'http://localhost:8080',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
     }
 
     // ─── SECURITY: Verify md5sig checksum ───
-    // md5sig = UPPER(MD5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + UPPER(MD5(merchant_secret))))
     const hashedSecret = CryptoJS.MD5(merchantSecret).toString().toUpperCase();
     const localMd5sig = CryptoJS.MD5(
       receivedMerchantId + orderId + payhereAmount + payhereCurrency + statusCode + hashedSecret
@@ -60,7 +59,6 @@ Deno.serve(async (req) => {
     console.log('md5sig verification PASSED');
 
     // ─── Determine payment status from status_code ───
-    // 2 = success, 0 = pending, -1 = canceled, -2 = failed, -3 = chargedback
     let attemptStatus: string;
     switch (statusCode) {
       case '2':
@@ -82,9 +80,7 @@ Deno.serve(async (req) => {
         attemptStatus = 'failed';
     }
 
-    // Parse custom_1: format is "type:eventId:donationId" or "type:donationId" or just "type"
-    // custom_1 for event_registration: "event_registration:eventId"
-    // custom_1 for donation: "donation:donationId"
+    // Parse custom_1
     let paymentType: string = 'donation';
     let eventId: string | null = null;
     let donationId: string | null = null;
@@ -125,49 +121,47 @@ Deno.serve(async (req) => {
 
     // ─── Create payment record (for completed/successful payments) ───
     if (attemptStatus === 'success') {
+      // HIGH-3: UPSERT on transaction_id to prevent duplicate records from webhook replays
       const { data: paymentData, error: paymentError } = await supabaseAdmin
         .from('payments')
-        .insert({
-          transaction_id: paymentId,
-          user_id: userId,
-          amount: parseFloat(payhereAmount),
-          currency: payhereCurrency,
-          status: 'completed',
-          payment_type: paymentType,
-          related_id: eventId || donationId,
-          related_type: paymentType,
-          payment_gateway: 'payhere',
-        })
+        .upsert(
+          {
+            transaction_id: paymentId,
+            user_id: userId,
+            amount: parseFloat(payhereAmount),
+            currency: payhereCurrency,
+            status: 'completed',
+            payment_type: paymentType,
+            related_id: eventId || donationId,
+            related_type: paymentType,
+            payment_gateway: 'payhere',
+          },
+          { onConflict: 'transaction_id', ignoreDuplicates: false }
+        )
         .select()
         .single();
 
       if (paymentError) {
-        console.error('Error inserting payment:', paymentError);
+        console.error('Error upserting payment:', paymentError);
         return new Response('ERROR', { status: 500 });
       }
 
-      console.log('Payment record created:', { id: paymentData.id });
+      console.log('Payment record upserted:', { id: paymentData.id });
 
-      // ─── SUCCESS: Create/update event registration (spot allocated NOW) ───
-      // Uses UPSERT to handle the UNIQUE(event_id, user_id) constraint.
-      // If a pending record exists from a previous attempt, it gets updated to 'paid'.
+      // ─── SUCCESS: Register via atomic RPC (HIGH-2: capacity race condition fix) ───
       if (paymentType === 'event_registration' && eventId && userId) {
         const { error: registrationError } = await supabaseAdmin
-          .from('event_registrations')
-          .upsert(
-            {
-              event_id: eventId,
-              user_id: userId,
-              status: 'paid',
-              registered_at: new Date().toISOString(),
-            },
-            { onConflict: 'event_id,user_id' }
-          );
+          .rpc('create_paid_registration', {
+            p_event_id: eventId,
+            p_user_id: userId,
+          });
 
         if (registrationError) {
-          console.error('Error creating/updating registration:', registrationError);
+          console.error('Error creating registration via RPC:', registrationError);
+          // Return 409 so PayHere knows there's an issue (capacity full)
+          return new Response('CAPACITY_FULL', { status: 409 });
         } else {
-          console.log('Event registration upserted with paid status for event:', eventId);
+          console.log('Event registration created via RPC for event:', eventId);
         }
       }
 

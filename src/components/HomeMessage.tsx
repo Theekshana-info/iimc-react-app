@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
 import { X, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
@@ -51,9 +52,9 @@ export function HomeMessage() {
               <div
                 className="text-sm text-muted-foreground truncate sm:whitespace-normal [&_*]:!m-0 [&_*]:!p-0"
                 dangerouslySetInnerHTML={{
-                  __html: isLongContent
+                  __html: sanitizeHtml(isLongContent
                     ? activeMessage.content.substring(0, 100) + '...'
-                    : activeMessage.content,
+                    : activeMessage.content),
                 }}
               />
             </div>
@@ -99,7 +100,7 @@ export function HomeMessage() {
           <div className="mt-4">
             <div
               className="text-muted-foreground prose prose-sm dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: expandedMessage?.content || '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(expandedMessage?.content || '') }}
             />
             {expandedMessage?.link_url && (
               <Button

@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getExtensionFromMime } from '@/lib/fileUtils';
 
 interface RichTextEditorProps {
   value: string;
@@ -80,6 +81,13 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // MEDIUM-5: Validate MIME type, not file extension
+    const ext = getExtensionFromMime(file.type);
+    if (!ext) {
+      toast.error(`Unsupported ${type} file type`);
+      return;
+    }
+
     if (type === 'image' && !file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
@@ -100,7 +108,6 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
     else setUploadingVideo(true);
 
     try {
-      const ext = file.name.split('.').pop();
       const fileName = `blog-media/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
 
       const { error } = await supabase.storage
@@ -109,14 +116,18 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
 
       if (error) throw error;
 
-      const { data: { publicUrl } } = supabase.storage
+      // HIGH-6: Use signed URL instead of public URL (bucket is now private)
+      const { data: signedData, error: signError } = await supabase.storage
         .from('admin-uploads')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
+
+      if (signError) throw signError;
+      const signedUrl = signedData?.signedUrl || '';
 
       if (type === 'image') {
-        editor?.chain().focus().setImage({ src: publicUrl }).run();
+        editor?.chain().focus().setImage({ src: signedUrl }).run();
       } else {
-        editor?.chain().focus().setVideo({ src: publicUrl }).run();
+        editor?.chain().focus().setVideo({ src: signedUrl }).run();
       }
       toast.success(`${type === 'image' ? 'Image' : 'Video'} uploaded successfully`);
     } catch (err: any) {

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,7 @@ export default function BlogArticle() {
 
         <div
           className="prose prose-lg dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content || '') }}
         />
       </article>
     </div>

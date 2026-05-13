@@ -7,6 +7,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Header } from "./components/Header";
+import { EmailVerificationBanner } from "./components/EmailVerificationBanner";
 import { Footer } from "./components/Footer";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -43,6 +44,7 @@ const App = () => (
           <BrowserRouter>
             <ScrollToTop />
             <Header />
+            <EmailVerificationBanner />
             <main>
               <Routes>
                 {/* Public Routes */}

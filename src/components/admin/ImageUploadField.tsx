@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Upload, Link, Loader2, X } from 'lucide-react';
+import { getExtensionFromMime } from '@/lib/fileUtils';
 
 interface ImageUploadFieldProps {
   label?: string;
@@ -29,8 +30,10 @@ export function ImageUploadField({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    // MEDIUM-5: Validate MIME type, not file extension
+    const ext = getExtensionFromMime(file.type);
+    if (!ext) {
+      toast.error('Unsupported file type. Allowed: JPG, PNG, GIF, WebP');
       return;
     }
 
@@ -41,7 +44,6 @@ export function ImageUploadField({
 
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
 
       const { error } = await supabase.storage
@@ -50,11 +52,13 @@ export function ImageUploadField({
 
       if (error) throw error;
 
-      const { data: { publicUrl } } = supabase.storage
+      // HIGH-6: Use signed URL instead of public URL (bucket is now private)
+      const { data: signedData, error: signError } = await supabase.storage
         .from('admin-uploads')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
 
-      onChange(publicUrl);
+      if (signError) throw signError;
+      onChange(signedData?.signedUrl || '');
       toast.success('Image uploaded successfully');
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');

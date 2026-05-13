@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -93,19 +94,11 @@ export default function EventDetail() {
 
   const handleFreeRegistration = async () => {
     try {
-      const { error } = await supabase
-        .from('event_registrations')
-        .insert({
-          event_id: id,
-          user_id: user.id,
-          status: 'paid',
-        });
-
+      // CRITICAL-1 fix: use secure RPC instead of direct INSERT
+      const { error } = await supabase.rpc('register_free_event', { p_event_id: id });
       if (error) throw error;
-
       toast.success('Successfully registered for event!');
       setShowRegisterDialog(false);
-      // Refresh the queries
       window.location.reload();
     } catch (error) {
       if (error instanceof Error) {
@@ -198,7 +191,7 @@ export default function EventDetail() {
               <h3 className="text-xl font-semibold mb-4">About This Event</h3>
               <div
                 className="text-muted-foreground prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: event.description || '' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description || '') }}
               />
             </div>
 

@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Loader2, Pencil, Plus, Trash2, Image as ImageIcon, Video as VideoIcon, X } from 'lucide-react';
+import { getExtensionFromMime } from '@/lib/fileUtils';
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
@@ -130,19 +131,30 @@ const compressImage = async (file: File) => {
 };
 
 const uploadToStorage = async (file: File, folder: string) => {
-    const ext = file.name.split('.').pop();
+    // MEDIUM-5: Use MIME type for extension, not filename
+    const ext = getExtensionFromMime(file.type);
+    if (!ext) throw new Error('Unsupported file type');
     const path = `${folder}/${Date.now()}-${uid()}.${ext}`;
     const { error } = await supabase.storage.from('admin-uploads').upload(path, file);
     if (error) throw error;
-    const { data } = supabase.storage.from('admin-uploads').getPublicUrl(path);
-    return data.publicUrl;
+    // HIGH-6: Use signed URL (bucket is now private)
+    const { data: signedData, error: signError } = await supabase.storage
+        .from('admin-uploads')
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signError) throw signError;
+    return signedData?.signedUrl || '';
 };
 
 const deleteFromStorage = async (url: string) => {
     if (!url.includes('/admin-uploads/')) return;
-    const path = url.split('/admin-uploads/')[1];
+    const path = url.split('/admin-uploads/')[1]?.split('?')[0]; // strip query params from signed URLs
     if (!path) return;
-    await supabase.storage.from('admin-uploads').remove([path]);
+    // LOW-2: Handle storage deletion errors
+    const { error } = await supabase.storage.from('admin-uploads').remove([path]);
+    if (error) {
+        console.error('Storage deletion failed:', error);
+        toast.error('File deleted from database but storage cleanup failed.');
+    }
 };
 
 export function ActivitiesManager() {
