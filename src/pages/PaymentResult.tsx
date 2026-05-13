@@ -21,11 +21,11 @@ export default function PaymentResult() {
   const [status, setStatus] = useState<PaymentStatus>(
     isPollingInitial ? 'polling' : 'failed'
   );
-  
+
   const [pollCount, setPollCount] = useState(0);
   const MAX_POLLS = 15;
 
-  // Poll the database for the real payment status from webhook
+  // Poll the verify edge function for the real payment status from webhook
   useEffect(() => {
     if (!isPollingInitial || status !== 'polling') return;
 
@@ -34,7 +34,6 @@ export default function PaymentResult() {
         if (prev >= MAX_POLLS) {
           clearInterval(pollInterval);
           // Polling timed out — payment was likely declined.
-          // Update the pending attempt to 'failed' so admin sees it
           if (attemptOrderId) {
             supabase
               .from('payment_attempts')
@@ -52,56 +51,29 @@ export default function PaymentResult() {
         return prev + 1;
       });
 
-      // For event registrations, check the payments table for THIS attempt only
-      // Uses paymentInitiatedAt to filter out old successful records
-      if (paymentType === 'event_registration' && eventId) {
-        // Primary check: payments table (broad SELECT policy, always accessible)
-        let query = supabase
-          .from('payments')
-          .select('status')
-          .eq('related_id', eventId)
-          .eq('payment_type', 'event_registration')
-          .eq('status', 'completed');
+      try {
+        // Use edge function to verify — it uses service_role so RLS won't block it
+        const { data, error } = await supabase.functions.invoke('verify_payhere_payment', {
+          body: {
+            paymentType,
+            eventId: paymentType === 'event_registration' ? eventId : undefined,
+            userId: (await supabase.auth.getUser()).data.user?.id,
+            donationId: paymentType === 'donation' ? donationId : undefined,
+          },
+        });
 
-        // Only match records created AFTER this payment was initiated
-        if (paymentInitiatedAt) {
-          query = query.gt('created_at', paymentInitiatedAt);
-        }
-
-        const { data: payment } = await query.maybeSingle();
-
-        if (payment) {
+        if (!error && data?.verified) {
           clearInterval(pollInterval);
           setStatus('success');
           return;
         }
-      }
-
-      // For donations, check if payment was created with 'completed' status
-      if (paymentType === 'donation' && donationId) {
-        let query = supabase
-          .from('payments')
-          .select('status')
-          .eq('related_id', donationId)
-          .eq('payment_type', 'donation')
-          .eq('status', 'completed');
-
-        if (paymentInitiatedAt) {
-          query = query.gt('created_at', paymentInitiatedAt);
-        }
-
-        const { data: payment } = await query.maybeSingle();
-
-        if (payment) {
-          clearInterval(pollInterval);
-          setStatus('success');
-          return;
-        }
+      } catch (e) {
+        console.error('Verify poll error:', e);
       }
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [isPollingInitial, status, paymentType, eventId, donationId, paymentInitiatedAt]);
+  }, [isPollingInitial, status, paymentType, eventId, donationId]);
 
   const isSuccess = status === 'success';
   const isPolling = status === 'polling';
@@ -127,15 +99,15 @@ export default function PaymentResult() {
             {isPolling
               ? 'Verifying Payment...'
               : isSuccess
-              ? 'Payment Successful!'
-              : 'Payment Not Confirmed'}
+                ? 'Payment Successful!'
+                : 'Payment Not Confirmed'}
           </CardTitle>
           <CardDescription>
             {isPolling
               ? 'We are confirming your payment with PayHere. This may take a few moments.'
               : isSuccess
-              ? 'Your payment has been verified and processed successfully.'
-              : 'Your payment could not be confirmed. If you completed payment, it may take a few minutes to process.'}
+                ? 'Your payment has been verified and processed successfully.'
+                : 'Your payment could not be confirmed. If you completed payment, it may take a few minutes to process.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

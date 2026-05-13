@@ -17,7 +17,7 @@ export default function Payment() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      
+
       // If anonymous donation and no user logged in, allow it
       if (isAnonymous && type === 'donation') {
         setUser(authUser || { id: 'anonymous' } as any);
@@ -86,13 +86,18 @@ export default function Payment() {
         console.error('Failed to log payment attempt:', e);
       }
 
-      // HIGH-1: Call edge function — amount is resolved SERVER-SIDE for events
+      // Call edge function to create PayHere order (generates hash server-side)
+      // Send ALL fields for backward compat with old deployed function + new fields for when it's redeployed
+      const notifyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payhere_webhook_handler`;
       const { data, error } = await supabase.functions.invoke('create_payhere_order', {
         body: {
+          amount,
+          orderId,
+          itemName: description || type,
+          notifyUrl,
+          // New fields for when edge function is redeployed (HIGH-1)
           type,
           eventId: type === 'event_registration' ? eventId : undefined,
-          amount: type === 'donation' ? amount : undefined, // Only pass amount for donations
-          orderId,
         },
       });
 
@@ -243,8 +248,8 @@ export default function Payment() {
             {!isEmailVerified
               ? 'Verify Email to Pay'
               : loading
-              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
-              : 'Pay with PayHere'}
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
+                : 'Pay with PayHere'}
           </Button>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

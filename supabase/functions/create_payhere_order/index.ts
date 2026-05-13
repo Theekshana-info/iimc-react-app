@@ -14,7 +14,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json();
@@ -27,19 +26,20 @@ Deno.serve(async (req) => {
     // ─── Authenticate the caller if JWT is present ───
     const authHeader = req.headers.get('authorization');
     if (authHeader) {
-      const supabaseUser = createClient(supabaseUrl, anonKey, {
-        global: { headers: { authorization: authHeader } },
-      });
-      const { data: { user }, error } = await supabaseUser.auth.getUser();
-      if (error || !user) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+      if (!error && user) {
+        userId = user.id;
+      } else if (type !== 'donation') {
+        // Non-donation payments REQUIRE valid auth
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
         });
       }
-      userId = user.id;
+      // For donations: auth failure is OK — continue as anonymous
     } else if (type !== 'donation') {
-      // Non-donation payments MUST be authenticated
+      // Non-donation payments MUST have auth header
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
@@ -64,6 +64,10 @@ Deno.serve(async (req) => {
       }
       resolvedAmount = parseFloat(amount);
       itemName = 'Donation to IIMC';
+    } else if (!type && amount) {
+      // Backward compat: old frontend sends amount + itemName without type
+      resolvedAmount = parseFloat(amount);
+      itemName = body.itemName || 'Payment';
     } else {
       throw new Error('Invalid payment type');
     }
