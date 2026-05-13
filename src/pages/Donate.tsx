@@ -161,7 +161,18 @@ export default function Donate() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="custom-amount">Or enter a custom amount (LKR)</Label>
-                  <Input id="custom-amount" type="number" placeholder="Enter amount" value={customAmount} onChange={(e) => { setCustomAmount(e.target.value); setAmount(''); }} />
+                  <Input 
+                    id="custom-amount" 
+                    type="text" 
+                    inputMode="numeric"
+                    placeholder="Enter amount" 
+                    value={customAmount} 
+                    onChange={(e) => { 
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setCustomAmount(val); 
+                      setAmount(''); 
+                    }} 
+                  />
                 </div>
                 <Button className="w-full" size="lg" onClick={handleDonate}>Continue</Button>
                 <div className="text-center text-xs text-muted-foreground">
