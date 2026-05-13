@@ -208,6 +208,14 @@ export default function Profile() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {donations.length > 0 && (
+                  <div className="mb-6 bg-primary/5 p-4 rounded-lg border border-primary/10 flex items-center justify-between">
+                    <span className="font-medium">Total Contributions</span>
+                    <span className="text-xl font-bold text-primary">
+                      LKR {donations.reduce((sum, d) => sum + Number(d.amount), 0).toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 {donations.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     You haven't made any donations yet.

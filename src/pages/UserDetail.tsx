@@ -69,7 +69,7 @@ export default function UserDetail() {
   }
 
   const totalDonations = user.donations
-    .filter((d: any) => d.status === 'paid')
+    .filter((d: any) => d.status === 'completed')
     .reduce((sum: number, d: any) => sum + Number(d.amount), 0);
 
   return (
