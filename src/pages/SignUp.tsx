@@ -12,6 +12,7 @@ import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthInput } from '@/components/auth/AuthInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthButton } from '@/components/auth/AuthButton';
+import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
@@ -23,7 +24,6 @@ const passwordSchema = z.string()
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   password: passwordSchema,
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -39,6 +39,9 @@ export default function SignUp() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  // Phone state managed outside react-hook-form (custom component)
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
   useEffect(() => {
     // If already logged in, redirect away
@@ -59,6 +62,14 @@ export default function SignUp() {
   });
 
   const onSubmit = async (data: SignUpValues) => {
+    // Validate phone separately
+    const localPart = phone.replace(/^\+\d+\s*/, '').replace(/\D/g, '');
+    if (!phone || localPart.length < 6) {
+      setPhoneError('Please enter a valid phone number');
+      return;
+    }
+    setPhoneError('');
+
     try {
       setLoading(true);
 
@@ -70,7 +81,7 @@ export default function SignUp() {
         options: {
           data: {
             full_name: data.fullName,
-            phone: data.phone,
+            phone,
           },
           emailRedirectTo: redirectUrl,
         },
@@ -99,8 +110,8 @@ export default function SignUp() {
   if (isSuccess) {
     return (
       <AuthLayout>
-        <AuthCard 
-          title="Check your email" 
+        <AuthCard
+          title="Check your email"
           description="We've sent a verification link to your email address."
         >
           <div className="text-center space-y-4 py-4">
@@ -118,35 +129,35 @@ export default function SignUp() {
 
   return (
     <AuthLayout>
-      <AuthCard 
-        title="Create an Account" 
+      <AuthCard
+        title="Create an Account"
         description="Join Isipathana International Meditation Center"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
           <AuthInput
             id="fullName"
             label="Full Name"
-            placeholder="John Doe"
+            placeholder="Enter your full name"
             error={errors.fullName?.message}
             {...register('fullName')}
           />
-          
+
           <AuthInput
             id="email"
             label="Email Address"
             type="email"
-            placeholder="you@example.com"
+            placeholder="Enter your email"
             error={errors.email?.message}
             {...register('email')}
           />
 
-          <AuthInput
-            id="phone"
-            label="Phone Number"
-            type="tel"
-            placeholder="+94 71 234 5678"
-            error={errors.phone?.message}
-            {...register('phone')}
+          <CountryPhoneInput
+            defaultCountry="LK"
+            onChange={(val) => {
+              setPhone(val);
+              if (val) setPhoneError('');
+            }}
+            error={phoneError}
           />
 
           <PasswordInput
