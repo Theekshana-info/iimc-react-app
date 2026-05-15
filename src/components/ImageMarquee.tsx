@@ -1,12 +1,12 @@
-import image1 from '@/assets/iimc-loby/iimc-loby-1.png';
-import image2 from '@/assets/iimc-loby/iimc-loby-2.png';
-import image3 from '@/assets/iimc-loby/iimc-loby-3.png';
-import image4 from '@/assets/iimc-loby/iimc-loby-4.png';
-import image5 from '@/assets/iimc-loby/iimc-loby-5.png';
-import image6 from '@/assets/iimc-loby/iimc-loby-6.png';
-import image7 from '@/assets/iimc-loby/iimc-loby-7.png';
-import image8 from '@/assets/iimc-loby/iimc-loby-8.png';
-import image9 from '@/assets/iimc-loby/iimc-loby-9.png';
+import image1 from '@/assets/iimc-loby/iimc-loby-1.jpeg';
+import image2 from '@/assets/iimc-loby/iimc-loby-2.jpeg';
+import image3 from '@/assets/iimc-loby/iimc-loby-3.jpeg';
+import image4 from '@/assets/iimc-loby/iimc-loby-4.jpeg';
+import image5 from '@/assets/iimc-loby/iimc-loby-5.jpeg';
+import image6 from '@/assets/iimc-loby/iimc-loby-6.jpeg';
+import image7 from '@/assets/iimc-loby/iimc-loby-7.jpeg';
+import image8 from '@/assets/iimc-loby/iimc-loby-8.jpeg';
+import image9 from '@/assets/iimc-loby/iimc-loby-9.jpeg';
 
 const images = [image1, image2, image3, image4, image5, image6, image7, image8, image9];
 
