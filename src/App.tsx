@@ -60,6 +60,8 @@ const App = () => (
                 <Route path="/activities" element={<Activities />} />
                 <Route path="/activities/:id" element={<ActivityDetail />} />
                 <Route path="/gallery" element={<Activities />} />
+                <Route path="/payment" element={<Payment />} />
+                <Route path="/payment-result" element={<PaymentResult />} />
                 
                 {/* Auth Routes */}
                 <Route path="/login" element={<Login />} />
@@ -69,8 +71,6 @@ const App = () => (
                 
                 {/* Protected Routes */}
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
-                <Route path="/payment-result" element={<ProtectedRoute><PaymentResult /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                 <Route path="/admin/users/:id" element={<ProtectedRoute><UserDetail /></ProtectedRoute>} />
                 
