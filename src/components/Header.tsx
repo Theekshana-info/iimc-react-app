@@ -47,7 +47,7 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8 relative">
       <div className="container mx-auto neu-header rounded-full flex h-16 items-center justify-between px-6">
         <Link to="/" className="flex items-center gap-2">
           <img
@@ -136,7 +136,7 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="lg:hidden neu-inset rounded-3xl mt-4 mx-auto max-w-[calc(100%-2rem)] max-h-[80vh] overflow-y-auto">
+        <div className="lg:hidden neu-inset rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto">
           <nav className="flex flex-col p-4 space-y-1">
             {navLinks.map((link) => (
               <Link

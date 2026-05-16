@@ -55,7 +55,9 @@ export function MessagesManager() {
               <TableCell>{message.name}</TableCell>
               <TableCell>{message.email}</TableCell>
               <TableCell>{message.subject || '-'}</TableCell>
-              <TableCell className="max-w-xs truncate">{message.message}</TableCell>
+              <TableCell className="max-w-xs whitespace-pre-wrap break-words align-top">
+                {message.message}
+              </TableCell>
               <TableCell>
                 <Badge variant={message.status === 'read' ? 'default' : 'secondary'}>
                   {message.status}
