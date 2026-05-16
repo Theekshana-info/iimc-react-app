@@ -73,12 +73,14 @@ interface CountryPhoneInputProps {
   defaultCountry?: CountryCode;
   /** Optional label override */
   label?: string;
+  /** Hide the label when a parent renders its own */
+  showLabel?: boolean;
 }
 
 export const CountryPhoneInput = React.forwardRef<
   HTMLInputElement,
   CountryPhoneInputProps
->(({ onChange, error, value, defaultCountry, label }, ref) => {
+>(({ onChange, error, value, defaultCountry, label, showLabel = true }, ref) => {
   const [selected, setSelected] = useState<CountryEntry>(() => {
     const code = defaultCountry && ALL_COUNTRIES.some((c) => c.code === defaultCountry)
       ? defaultCountry
@@ -176,9 +178,11 @@ export const CountryPhoneInput = React.forwardRef<
 
   return (
     <div className="space-y-1.5 w-full">
-      <Label htmlFor="phoneLocal" className={error ? 'text-destructive' : ''}>
-        {label || 'Phone Number'}
-      </Label>
+      {showLabel && (
+        <Label htmlFor="phoneLocal" className={error ? 'text-destructive' : ''}>
+          {label || 'Phone Number'}
+        </Label>
+      )}
 
       {/* ── Unified wrapper: matches h-12 rounded-xl neu-inset from Input ─ */}
       <div className="relative" ref={wrapperRef}>

@@ -10,23 +10,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 import { toast } from 'sonner';
-import { z } from 'zod';
 import { format } from 'date-fns';
 import { Calendar, Heart, Loader2, Pencil, Shield, User } from 'lucide-react';
 import { UserActivities } from '@/components/profile/UserActivities';
 
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
-const profileSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  location: z.string().max(100).optional(),
-  bio: z.string().max(500).optional(),
-});
-
-
 type SectionKey = 'profile' | 'activity' | 'donations' | 'security';
+type EditableField = 'fullName' | 'phone' | 'dateOfBirth' | 'location' | 'bio';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -37,8 +28,9 @@ export default function Profile() {
   const [donations, setDonations] = useState<any[]>([]);
 
   const [activeSection, setActiveSection] = useState<SectionKey>('profile');
-  const [savingProfile, setSavingProfile] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [editingField, setEditingField] = useState<EditableField | null>(null);
+  const [savingField, setSavingField] = useState<EditableField | null>(null);
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -48,12 +40,6 @@ export default function Profile() {
 
   const [showResetPanel, setShowResetPanel] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
-
-  const [securityName, setSecurityName] = useState('');
-  const [savingName, setSavingName] = useState(false);
-
-  const [securityPhone, setSecurityPhone] = useState('');
-  const [savingPhone, setSavingPhone] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -79,8 +65,6 @@ export default function Profile() {
         setDateOfBirth(profileData.date_of_birth || '');
         setLocation(profileData.location || '');
         setBio(profileData.bio || '');
-        setSecurityName(profileData.full_name || '');
-        setSecurityPhone(profileData.phone || '');
       }
 
       const { data: paymentData } = await supabase
@@ -154,60 +138,101 @@ export default function Profile() {
     }
   };
 
-  const handleProfileSave = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const resetFieldValues = () => {
+    if (!profile) return;
+    setFullName(profile.full_name || '');
+    setPhone(profile.phone || '');
+    setDateOfBirth(profile.date_of_birth || '');
+    setLocation(profile.location || '');
+    setBio(profile.bio || '');
+  };
 
-    try {
-      const validated = profileSchema.parse({
-        fullName,
-        phone: phone || undefined,
-        dateOfBirth: dateOfBirth || undefined,
-        location: location || undefined,
-        bio: bio || undefined,
-      });
+  const toggleEditField = (field: EditableField) => {
+    setEditingField((current) => {
+      if (current === field) {
+        resetFieldValues();
+        return null;
+      }
+      resetFieldValues();
+      return field;
+    });
+  };
 
+  const handleFieldConfirm = async (field: EditableField) => {
+    if (!user) return;
+
+    const updates: Record<string, string | null> = {};
+    if (field === 'fullName') {
+      const name = fullName.trim();
+      if (name.length < 2 || name.length > 100) {
+        toast.error('Name must be between 2 and 100 characters');
+        return;
+      }
+      updates.full_name = name;
+      setFullName(name);
+    }
+
+    if (field === 'phone') {
       const normalizedPhone = (phone || '').replace(/\s+/g, '');
       if (normalizedPhone && !phoneRegex.test(normalizedPhone)) {
         toast.error('Invalid phone number');
         return;
       }
+      updates.phone = phone || null;
+    }
 
-      setSavingProfile(true);
+    if (field === 'dateOfBirth') {
+      if (dateOfBirth) {
+        const selectedDate = new Date(dateOfBirth);
+        if (Number.isNaN(selectedDate.getTime())) {
+          toast.error('Please select a valid date');
+          return;
+        }
+        if (selectedDate > new Date()) {
+          toast.error('Date of birth cannot be in the future');
+          return;
+        }
+        updates.date_of_birth = dateOfBirth;
+      } else {
+        updates.date_of_birth = null;
+      }
+    }
 
+    if (field === 'location') {
+      if (location.length > 100) {
+        toast.error('Location must be 100 characters or less');
+        return;
+      }
+      updates.location = location || null;
+    }
+
+    if (field === 'bio') {
+      if (bio.length > 500) {
+        toast.error('Bio must be 500 characters or less');
+        return;
+      }
+      updates.bio = bio || null;
+    }
+
+    try {
+      setSavingField(field);
       const { error } = await supabase
         .from('profiles')
-        .update({
-          full_name: validated.fullName,
-          phone: validated.phone || null,
-          date_of_birth: validated.dateOfBirth || null,
-          location: validated.location || null,
-          bio: validated.bio || null,
-        })
+        .update(updates)
         .eq('id', user.id);
-
       if (error) throw error;
 
-      setProfile((prev: any) => prev ? {
-        ...prev,
-        full_name: validated.fullName,
-        phone: validated.phone || null,
-        date_of_birth: validated.dateOfBirth || null,
-        location: validated.location || null,
-        bio: validated.bio || null,
-      } : prev);
-      setSecurityName(validated.fullName);
-      setSecurityPhone(validated.phone || '');
-      toast.success('Profile updated successfully');
+      setProfile((prev: any) => prev ? { ...prev, ...updates } : prev);
+      setEditingField(null);
+      toast.success('Changes saved');
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        error.errors.forEach((err) => {
-          toast.error(err.message);
-        });
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         toast.error(error.message);
+      } else {
+        toast.error('Failed to save changes');
       }
     } finally {
-      setSavingProfile(false);
+      setSavingField(null);
     }
   };
 
@@ -231,64 +256,6 @@ export default function Profile() {
     }
   };
 
-  const handleNameSave = async () => {
-    if (securityName.trim().length < 2 || securityName.trim().length > 100) {
-      toast.error('Name must be between 2 and 100 characters');
-      return;
-    }
-
-    try {
-      setSavingName(true);
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: securityName.trim() })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setFullName(securityName.trim());
-      setProfile((prev: any) => prev ? { ...prev, full_name: securityName.trim() } : prev);
-      toast.success('Name updated');
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Failed to update name');
-      }
-    } finally {
-      setSavingName(false);
-    }
-  };
-
-  const handlePhoneSave = async () => {
-    const normalizedPhone = (securityPhone || '').replace(/\s+/g, '');
-    if (normalizedPhone && !phoneRegex.test(normalizedPhone)) {
-      toast.error('Please enter a valid phone number');
-      return;
-    }
-
-    try {
-      setSavingPhone(true);
-      const { error } = await supabase
-        .from('profiles')
-        .update({ phone: securityPhone || null })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      setPhone(securityPhone || '');
-      setProfile((prev: any) => prev ? { ...prev, phone: securityPhone || null } : prev);
-      toast.success('Phone number updated');
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Failed to update phone number');
-      }
-    } finally {
-      setSavingPhone(false);
-    }
-  };
 
   if (!user) {
     return (
@@ -306,6 +273,9 @@ export default function Profile() {
   const thisYearTotal = donations
     .filter((donation) => donation.created_at && new Date(donation.created_at).getFullYear() === currentYear)
     .reduce((sum, d) => sum + Number(d.amount), 0);
+  const dateOfBirthLabel = dateOfBirth
+    ? format(new Date(dateOfBirth), 'PPP')
+    : 'Not set';
 
   const navItems = [
     { key: 'profile', label: 'Profile', icon: User },
@@ -330,17 +300,6 @@ export default function Profile() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full"
-              onClick={handleAvatarClick}
-              aria-label="Edit avatar"
-              disabled={avatarUploading}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
           </div>
           <div>
             <p className="font-semibold">{displayName}</p>
@@ -402,16 +361,47 @@ export default function Profile() {
 
                 <hr className="border-border my-6" />
 
-                <form onSubmit={handleProfileSave} className="space-y-4">
+                <div className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      maxLength={100}
-                      required
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleEditField('fullName')}
+                        disabled={savingField === 'fullName'}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {editingField === 'fullName' ? (
+                      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+                        <Input
+                          id="fullName"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          maxLength={100}
+                          required
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => handleFieldConfirm('fullName')}
+                          disabled={savingField === 'fullName'}
+                        >
+                          {savingField === 'fullName'
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : 'Confirm'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Input
+                        id="fullName"
+                        value={fullName || 'Not set'}
+                        disabled
+                        className="bg-muted"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -419,51 +409,177 @@ export default function Profile() {
                     <Input id="email" type="email" value={displayEmail} disabled className="bg-muted" />
                   </div>
 
-                  <CountryPhoneInput
-                    value={phone}
-                    onChange={(value) => setPhone(value)}
-                  />
-
                   <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      max={format(new Date(), 'yyyy-MM-dd')}
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(e.target.value)}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label>Phone Number</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleEditField('phone')}
+                        disabled={savingField === 'phone'}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {editingField === 'phone' ? (
+                      <div className="space-y-3">
+                        <CountryPhoneInput
+                          value={phone}
+                          onChange={(value) => setPhone(value)}
+                          showLabel={false}
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => handleFieldConfirm('phone')}
+                          disabled={savingField === 'phone'}
+                        >
+                          {savingField === 'phone'
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : 'Confirm'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={phone || 'Not set'}
+                        disabled
+                        className="bg-muted"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      placeholder="Colombo, Sri Lanka"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      maxLength={100}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleEditField('dateOfBirth')}
+                        disabled={savingField === 'dateOfBirth'}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {editingField === 'dateOfBirth' ? (
+                      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+                        <Input
+                          id="dateOfBirth"
+                          type="date"
+                          max={format(new Date(), 'yyyy-MM-dd')}
+                          value={dateOfBirth}
+                          onChange={(e) => setDateOfBirth(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => handleFieldConfirm('dateOfBirth')}
+                          disabled={savingField === 'dateOfBirth'}
+                        >
+                          {savingField === 'dateOfBirth'
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : 'Confirm'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Input
+                        id="dateOfBirth"
+                        value={dateOfBirthLabel}
+                        disabled
+                        className="bg-muted"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      maxLength={500}
-                      rows={4}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {bio.length} / 500
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="location">Location</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleEditField('location')}
+                        disabled={savingField === 'location'}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {editingField === 'location' ? (
+                      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+                        <Input
+                          id="location"
+                          placeholder="Colombo, Sri Lanka"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          maxLength={100}
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => handleFieldConfirm('location')}
+                          disabled={savingField === 'location'}
+                        >
+                          {savingField === 'location'
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : 'Confirm'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Input
+                        id="location"
+                        value={location || 'Not set'}
+                        disabled
+                        className="bg-muted"
+                      />
+                    )}
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={savingProfile}>
-                    {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
-                  </Button>
-                </form>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="bio">Bio</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleEditField('bio')}
+                        disabled={savingField === 'bio'}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {editingField === 'bio' ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          id="bio"
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          maxLength={500}
+                          rows={4}
+                        />
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{bio.length} / 500</span>
+                          <Button
+                            type="button"
+                            onClick={() => handleFieldConfirm('bio')}
+                            disabled={savingField === 'bio'}
+                          >
+                            {savingField === 'bio'
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : 'Confirm'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Textarea
+                        id="bio"
+                        value={bio || 'Not set'}
+                        disabled
+                        className="bg-muted"
+                        rows={4}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -554,38 +670,6 @@ export default function Profile() {
                   )}
                 </div>
 
-                <hr className="border-border my-6" />
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Change Name</h3>
-                  <div className="flex flex-col md:flex-row gap-3 md:items-end">
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor="securityName">Full Name</Label>
-                      <Input
-                        id="securityName"
-                        value={securityName}
-                        onChange={(e) => setSecurityName(e.target.value)}
-                        maxLength={100}
-                      />
-                    </div>
-                    <Button type="button" onClick={handleNameSave} disabled={savingName}>
-                      {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                    </Button>
-                  </div>
-                </div>
-
-                <hr className="border-border my-6" />
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Change Phone Number</h3>
-                  <CountryPhoneInput
-                    value={securityPhone}
-                    onChange={(value) => setSecurityPhone(value)}
-                  />
-                  <Button type="button" onClick={handlePhoneSave} disabled={savingPhone}>
-                    {savingPhone ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                  </Button>
-                </div>
               </div>
             )}
           </div>
