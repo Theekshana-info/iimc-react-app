@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { PasswordInput } from '@/components/auth/PasswordInput';
 import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -26,11 +25,6 @@ const profileSchema = z.object({
   bio: z.string().max(500).optional(),
 });
 
-type PasswordErrors = {
-  newPassword?: string;
-  confirmPassword?: string;
-  submit?: string;
-};
 
 type SectionKey = 'profile' | 'activity' | 'donations' | 'security';
 
@@ -52,10 +46,8 @@ export default function Profile() {
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
 
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordErrors, setPasswordErrors] = useState<PasswordErrors>({});
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [showResetPanel, setShowResetPanel] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
 
   const [securityName, setSecurityName] = useState('');
   const [savingName, setSavingName] = useState(false);
@@ -219,34 +211,23 @@ export default function Profile() {
     }
   };
 
-  const handlePasswordSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const errors: PasswordErrors = {};
-
-    if (newPassword.length < 8) {
-      errors.newPassword = 'Password must be at least 8 characters';
-    }
-
-    if (newPassword !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
-
-    setPasswordErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-
+  const handleSendResetLink = async () => {
+    if (!user?.email) return;
     try {
-      setSavingPassword(true);
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) {
-        setPasswordErrors({ submit: error.message });
-        return;
+      setSendingReset(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('Password reset link sent. Check your email.');
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to send reset link');
       }
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordErrors({});
-      toast.success('Password updated');
     } finally {
-      setSavingPassword(false);
+      setSendingReset(false);
     }
   };
 
@@ -555,37 +536,22 @@ export default function Profile() {
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Security</h2>
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Change Password</h3>
-                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                    <div className="space-y-1">
-                      <PasswordInput
-                        id="newPassword"
-                        label="New Password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                      />
-                      {passwordErrors.newPassword && (
-                        <p className="text-xs text-destructive">{passwordErrors.newPassword}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <PasswordInput
-                        id="confirmPassword"
-                        label="Confirm Password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                      />
-                      {passwordErrors.confirmPassword && (
-                        <p className="text-xs text-destructive">{passwordErrors.confirmPassword}</p>
-                      )}
-                    </div>
-                    {passwordErrors.submit && (
-                      <p className="text-sm text-destructive">{passwordErrors.submit}</p>
-                    )}
-                    <Button type="submit" disabled={savingPassword}>
-                      {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update Password'}
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Reset Password</h3>
+                  {!showResetPanel ? (
+                    <Button type="button" onClick={() => setShowResetPanel(true)}>
+                      Reset Password
                     </Button>
-                  </form>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="resetEmail">Email Address</Label>
+                        <Input id="resetEmail" type="email" value={displayEmail} disabled className="bg-muted" />
+                      </div>
+                      <Button type="button" onClick={handleSendResetLink} disabled={sendingReset}>
+                        {sendingReset ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Password Reset Link'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <hr className="border-border my-6" />
