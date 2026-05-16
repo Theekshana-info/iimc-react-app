@@ -48,17 +48,17 @@ export default function Donate() {
   const handleProceedToPayment = async () => {
     const donationAmount = amount || customAmount;
     try {
-      const { data: donationData, error: donationError } = await supabase
+      const donationId = crypto.randomUUID();
+      const { error: donationError } = await supabase
         .from('donations')
         .insert({
+          id: donationId,
           amount: parseFloat(donationAmount),
           donor_name: donorName || null,
           donor_email: donorEmail || null,
           donor_message: donorMessage || null,
           status: 'pending',
-        })
-        .select()
-        .single();
+        });
 
       if (donationError) throw donationError;
 
@@ -67,7 +67,7 @@ export default function Donate() {
           amount: parseFloat(donationAmount),
           type: 'donation',
           description: 'Donation to IIMC',
-          donationId: donationData.id,
+          donationId: donationId,
           isAnonymous: true,
         },
       });

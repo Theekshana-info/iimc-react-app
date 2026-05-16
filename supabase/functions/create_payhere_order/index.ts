@@ -72,8 +72,11 @@ Deno.serve(async (req) => {
       throw new Error('Invalid payment type');
     }
 
-    const merchantId = Deno.env.get('PAYHERE_MERCHANT_ID')!;
-    const merchantSecret = Deno.env.get('PAYHERE_MERCHANT_SECRET')!;
+    const merchantId = Deno.env.get('PAYHERE_MERCHANT_ID');
+    const merchantSecret = Deno.env.get('PAYHERE_MERCHANT_SECRET');
+    if (!merchantId || !merchantSecret) {
+      throw new Error('PayHere credentials are not configured (PAYHERE_MERCHANT_ID/PAYHERE_MERCHANT_SECRET)');
+    }
     const currency = 'LKR';
 
     const amountFormatted = resolvedAmount
@@ -84,8 +87,9 @@ Deno.serve(async (req) => {
     const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
     const hash = CryptoJS.MD5(hashString).toString().toUpperCase();
 
-    // notifyUrl is ALWAYS hardcoded server-side — never from client
-    const notifyUrl = `${supabaseUrl}/functions/v1/payhere_webhook_handler`;
+    // notifyUrl is ALWAYS server-side — never from client
+    const notifyUrl = Deno.env.get('PAYHERE_NOTIFY_URL')
+      || `${supabaseUrl}/functions/v1/payhere_webhook_handler`;
 
     return new Response(
       JSON.stringify({

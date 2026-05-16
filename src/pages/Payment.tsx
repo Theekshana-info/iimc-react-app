@@ -101,6 +101,8 @@ export default function Payment() {
         },
       });
 
+      console.log('create_payhere_order response', { data, error });
+
       if (error) throw error;
       if (!data) throw new Error('No data received from edge function');
 
@@ -155,17 +157,31 @@ export default function Payment() {
         custom1 = `donation:${donationId}`;
       }
 
+      const items = data.items || description || type || 'Payment';
+      const amountValue = data.amount || amount;
+
+      const missingFields: string[] = [];
+      if (!data.merchant_id) missingFields.push('merchant_id');
+      if (!data.order_id) missingFields.push('order_id');
+      if (!amountValue) missingFields.push('amount');
+      if (!data.currency) missingFields.push('currency');
+      if (!data.hash) missingFields.push('hash');
+
+      if (missingFields.length > 0) {
+        throw new Error(`Invalid PayHere data received from edge function (missing: ${missingFields.join(', ')})`);
+      }
+
       // Build the payment object for the JS SDK
       const payment = {
         // CRITICAL-2: Environment-controlled sandbox mode
         sandbox: import.meta.env.VITE_PAYHERE_SANDBOX === 'true',
         merchant_id: data.merchant_id,
-        return_url: undefined,
-        cancel_url: undefined,
+        return_url: `${window.location.origin}/payment-result`,
+        cancel_url: `${window.location.origin}/payment`,
         notify_url: data.notify_url,
         order_id: data.order_id,
-        items: data.items,
-        amount: data.amount,
+        items,
+        amount: String(amountValue),
         currency: data.currency,
         hash: data.hash,
         first_name: user.id === 'anonymous' ? 'Donor' : (user.user_metadata?.full_name?.split(' ')[0] || 'User'),
@@ -183,7 +199,8 @@ export default function Payment() {
 
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error('Failed to initiate payment');
+      const message = error instanceof Error ? error.message : 'Failed to initiate payment';
+      toast.error(message);
       setLoading(false);
     }
   };
