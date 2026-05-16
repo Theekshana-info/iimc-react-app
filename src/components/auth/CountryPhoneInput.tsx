@@ -67,20 +67,29 @@ interface CountryPhoneInputProps {
   onChange?: (value: string) => void;
   /** Validation error message */
   error?: string;
+  /** Prefilled value, e.g. "+94 771234567" */
+  value?: string;
+  /** Default country code for initial selection */
+  defaultCountry?: CountryCode;
+  /** Optional label override */
+  label?: string;
 }
 
 export const CountryPhoneInput = React.forwardRef<
   HTMLInputElement,
   CountryPhoneInputProps
->(({ onChange, error }, ref) => {
+>(({ onChange, error, value, defaultCountry, label }, ref) => {
   const [selected, setSelected] = useState<CountryEntry>(() => {
-    const code = detectCountry();
+    const code = defaultCountry && ALL_COUNTRIES.some((c) => c.code === defaultCountry)
+      ? defaultCountry
+      : detectCountry();
     return ALL_COUNTRIES.find((c) => c.code === code) ?? ALL_COUNTRIES[0];
   });
   const [phoneLocal, setPhoneLocal] = useState('');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const lastValueRef = useRef<string | undefined>(undefined);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -94,12 +103,41 @@ export const CountryPhoneInput = React.forwardRef<
 
   // Notify parent
   useEffect(() => {
-    const full = phoneLocal.trim()
-      ? `${selected.dialCode} ${phoneLocal.trim()}`
+    const localDigits = phoneLocal.replace(/\D/g, '');
+    const full = localDigits
+      ? `${selected.dialCode} ${localDigits}`
       : '';
+    lastValueRef.current = full;
     onChange?.(full);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, phoneLocal]);
+
+  useEffect(() => {
+    if (value === undefined) return;
+    if (value === lastValueRef.current) return;
+    lastValueRef.current = value;
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setPhoneLocal('');
+      return;
+    }
+    const normalized = trimmed.replace(/\s+/g, '');
+    if (normalized.startsWith('+')) {
+      const match = ALL_COUNTRIES
+        .map((c) => c.dialCode)
+        .filter((dial) => normalized.startsWith(dial))
+        .sort((a, b) => b.length - a.length)[0];
+
+      if (match) {
+        const found = ALL_COUNTRIES.find((c) => c.dialCode === match);
+        if (found) setSelected(found);
+        setPhoneLocal(normalized.slice(match.length));
+        return;
+      }
+    }
+
+    setPhoneLocal(normalized.replace(/^\+/, ''));
+  }, [value]);
 
   // Close on outside click
   useEffect(() => {
@@ -139,7 +177,7 @@ export const CountryPhoneInput = React.forwardRef<
   return (
     <div className="space-y-1.5 w-full">
       <Label htmlFor="phoneLocal" className={error ? 'text-destructive' : ''}>
-        Phone Number
+        {label || 'Phone Number'}
       </Label>
 
       {/* ── Unified wrapper: matches h-12 rounded-xl neu-inset from Input ─ */}
@@ -177,9 +215,8 @@ export const CountryPhoneInput = React.forwardRef<
               {selected.dialCode}
             </span>
             <ChevronDown
-              className={`h-3.5 w-3.5 text-muted-foreground/60 transition-transform duration-200 ${
-                open ? 'rotate-180' : ''
-              }`}
+              className={`h-3.5 w-3.5 text-muted-foreground/60 transition-transform duration-200 ${open ? 'rotate-180' : ''
+                }`}
             />
           </button>
 
@@ -270,9 +307,8 @@ export const CountryPhoneInput = React.forwardRef<
                       <FlagImg code={c.code} size="md" />
                       <span className="flex-1 truncate">{c.name}</span>
                       <span
-                        className={`tabular-nums text-xs shrink-0 ${
-                          isActive ? 'text-primary' : 'text-muted-foreground'
-                        }`}
+                        className={`tabular-nums text-xs shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground'
+                          }`}
                       >
                         {c.dialCode}
                       </span>
