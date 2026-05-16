@@ -109,10 +109,14 @@ export const CountryPhoneInput = React.forwardRef<
     const full = localDigits
       ? `${selected.dialCode} ${localDigits}`
       : '';
+
+    if (value && localDigits.length === 0) return;
+    if (value !== undefined && value === full) return;
+
     lastValueRef.current = full;
     onChange?.(full);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, phoneLocal]);
+  }, [selected, phoneLocal, value]);
 
   useEffect(() => {
     if (value === undefined) return;
