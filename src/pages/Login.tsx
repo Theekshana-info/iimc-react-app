@@ -12,6 +12,7 @@ import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthInput } from '@/components/auth/AuthInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthButton } from '@/components/auth/AuthButton';
+import { GoogleSignInButton, AuthDivider } from '@/components/auth/GoogleSignInButton';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -25,10 +26,9 @@ export default function Login() {
   const location = useLocation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-
+  const [googleOnlyMessage, setGoogleOnlyMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // If already logged in, redirect away
     if (user) {
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
@@ -44,8 +44,9 @@ export default function Login() {
     resolver: zodResolver(signInSchema),
   });
 
-
   const onSubmit = async (data: SignInValues) => {
+    setGoogleOnlyMessage(null);
+
     try {
       setLoading(true);
 
@@ -56,12 +57,28 @@ export default function Login() {
 
       if (error) throw error;
 
-      // Upon success, the AuthContext will automatically update and trigger the useEffect to redirect
       toast.success('Logged in successfully');
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('Invalid login credentials')) {
-          toast.error('Invalid email or password');
+          // Check if this is a Google-only account (no password set)
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('auth_methods')
+            .eq('email', data.email)
+            .maybeSingle();
+
+          if (
+            profileData?.auth_methods?.includes('google') &&
+            !profileData?.auth_methods?.includes('password') &&
+            !profileData?.auth_methods?.includes('email')
+          ) {
+            setGoogleOnlyMessage(
+              'This account uses Google Sign-In. Please continue with Google, or set a password in your Profile Settings after signing in.'
+            );
+          } else {
+            toast.error('Invalid email or password');
+          }
         } else if (error.message.includes('Email not confirmed')) {
           toast.error('Please verify your email address before logging in');
         } else {
@@ -73,14 +90,26 @@ export default function Login() {
     }
   };
 
-
   return (
     <AuthLayout>
       <AuthCard 
         title="Welcome Back" 
         description="Log in to your IIMC account"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <div className="mt-4">
+          <GoogleSignInButton />
+          <AuthDivider />
+        </div>
+
+        {googleOnlyMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              {googleOnlyMessage}
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <AuthInput
             id="email"
             label="Email Address"

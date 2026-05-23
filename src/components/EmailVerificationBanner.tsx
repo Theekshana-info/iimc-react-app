@@ -12,7 +12,9 @@ export function EmailVerificationBanner() {
   const [sending, setSending] = useState(false);
 
   // Only show to logged-in users with unverified email
-  if (!user || user.email_confirmed_at || dismissed) return null;
+  // OAuth users (Google, etc.) always have verified emails
+  const isOAuthUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
+  if (!user || user.email_confirmed_at || isOAuthUser || dismissed) return null;
 
   const handleResend = async () => {
     setSending(true);

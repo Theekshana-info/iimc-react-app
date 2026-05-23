@@ -556,40 +556,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auth_methods: string[] | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
           date_of_birth: string | null
           email: string | null
           full_name: string | null
+          has_password: boolean | null
           id: string
           location: string | null
           phone: string | null
           theme: string | null
+          updated_at: string | null
         }
         Insert: {
+          auth_methods?: string[] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
+          has_password?: boolean | null
           id: string
           location?: string | null
           phone?: string | null
           theme?: string | null
+          updated_at?: string | null
         }
         Update: {
+          auth_methods?: string[] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
+          has_password?: boolean | null
           id?: string
           location?: string | null
           phone?: string | null
           theme?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

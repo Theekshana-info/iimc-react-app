@@ -13,6 +13,7 @@ import { AuthInput } from '@/components/auth/AuthInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
+import { GoogleSignInButton, AuthDivider } from '@/components/auth/GoogleSignInButton';
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
@@ -39,12 +40,11 @@ export default function SignUp() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  // Phone state managed outside react-hook-form (custom component)
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [googleExistsMessage, setGoogleExistsMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // If already logged in, redirect away
     if (user) {
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
@@ -62,6 +62,8 @@ export default function SignUp() {
   });
 
   const onSubmit = async (data: SignUpValues) => {
+    setGoogleExistsMessage(null);
+
     // Validate phone separately
     const localPart = phone.replace(/^\+\d+\s*/, '').replace(/\D/g, '');
     if (!phone || localPart.length < 6) {
@@ -89,15 +91,25 @@ export default function SignUp() {
 
       if (error) throw error;
 
-      // Update additional fields if necessary - the trigger handle_new_user 
-      // now handles full_name, email, and phone insertion to profiles automatically.
-
       setIsSuccess(true);
       toast.success('Account created successfully!');
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('User already registered')) {
-          toast.error('An account with this email already exists');
+          // Check if this is a Google account
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('auth_methods')
+            .eq('email', data.email)
+            .maybeSingle();
+
+          if (profileData?.auth_methods?.includes('google')) {
+            setGoogleExistsMessage(
+              'This email is linked to a Google account. Sign in with Google, then go to Profile Settings to set a password if you want both login methods.'
+            );
+          } else {
+            toast.error('An account with this email already exists');
+          }
         } else {
           toast.error(error.message);
         }
@@ -133,7 +145,20 @@ export default function SignUp() {
         title="Create an Account"
         description="Join Isipathana International Meditation Center"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <div className="mt-4">
+          <GoogleSignInButton />
+          <AuthDivider />
+        </div>
+
+        {googleExistsMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              {googleExistsMessage}
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <AuthInput
             id="fullName"
             label="Full Name"

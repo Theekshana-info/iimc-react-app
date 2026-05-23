@@ -30,13 +30,14 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import UserDetail from "./pages/UserDetail";
+import AuthCallback from "./pages/AuthCallback";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const location = useLocation();
-  const hideChrome = location.pathname === "/reset-password";
+  const hideChrome = location.pathname === "/reset-password" || location.pathname === "/auth/callback";
 
   return (
     <>
@@ -66,6 +67,7 @@ const AppLayout = () => {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Protected Routes */}
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
