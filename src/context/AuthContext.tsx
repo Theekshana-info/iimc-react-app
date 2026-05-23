@@ -68,55 +68,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user?.id, fetchProfile]);
 
   useEffect(() => {
-    // Get initial session
-    const initializeAuth = async () => {
-      console.log('[Auth] Initializing auth...');
-      try {
-        console.log('[Auth] Calling getSession...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[Auth] getSession result:', { session, error });
-        if (error) throw error;
+    let mounted = true;
+    console.log('[Auth] Setting up AuthContext...');
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!mounted) return;
+        console.log('[Auth] Auth event:', event);
         
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          console.log('[Auth] Calling fetchProfile from initializeAuth...');
-          await fetchProfile(session.user.id);
-          console.log('[Auth] fetchProfile finished from initializeAuth');
-        }
-      } catch (error) {
-        console.error('Error fetching session:', error);
-      } finally {
-        console.log('[Auth] Setting loading to false from initializeAuth');
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    console.log('[Auth] Setting up onAuthStateChange...');
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('[Auth] onAuthStateChange event triggered:', _event);
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          console.log('[Auth] Calling fetchProfile from onAuthStateChange...');
-          await fetchProfile(session.user.id);
-          console.log('[Auth] fetchProfile finished from onAuthStateChange');
+          console.log('[Auth] Fetching profile for session (non-blocking)...');
+          // CRITICAL: Do NOT await fetchProfile here!
+          // Supabase internally awaits this callback while holding a lock.
+          // If we await a Supabase query here, the query waits for the lock,
+          // causing an infinite deadlock!
+          fetchProfile(session.user.id).finally(() => {
+            if (mounted) {
+              console.log('[Auth] Setting loading to false after profile fetch');
+              setLoading(false);
+            }
+          });
         } else {
           setProfile(null);
+          console.log('[Auth] Setting loading to false (no session)');
+          setLoading(false);
         }
-
-        console.log('[Auth] Setting loading to false from onAuthStateChange');
-        setLoading(false);
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
