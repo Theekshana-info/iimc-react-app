@@ -2,16 +2,11 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useSetting } from '@/hooks/useSetting';
 import Typewriter from 'typewriter-effect';
-import heroImage from '@/assets/hero-meditation-zen.jpg';
-import mobileHeroImage from '@/assets/background-mobile.png';
-import iimcLogo from '@/assets/iimc-logo.jpg';
+import heroVideo from '@/assets/hero-video.mp4';
 
 export function Hero() {
   const navigate = useNavigate();
-  const { value: title } = useSetting('hero_title');
-  const { value: subtitle } = useSetting('hero_subtitle');
 
   const [showFullTitle, setShowFullTitle] = useState(true);
 
@@ -24,15 +19,17 @@ export function Hero() {
 
   return (
     <section className="relative min-h-[650px] sm:min-h-[600px] md:min-h-[700px] flex items-center justify-center overflow-hidden -mt-24 pt-24">
-      {/* Animated Background Image with Parallax Effect */}
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 ease-out bg-[image:var(--mobile-bg)] sm:bg-[image:var(--desktop-bg)]"
-        style={{
-          '--desktop-bg': `url(${heroImage})`,
-          '--mobile-bg': `url(${mobileHeroImage})`,
-          backgroundAttachment: 'fixed',
-        } as React.CSSProperties}
-      >
+      {/* Background Video */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out"
+        >
+          <source src={heroVideo} type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/70 animate-breathe" />
         <div className="absolute top-20 left-[10%] w-32 h-32 bg-primary/5 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-20 right-[15%] w-40 h-40 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
@@ -49,7 +46,7 @@ export function Hero() {
               transition={{ duration: 0.6, ease: "easeInOut" }}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-black dark:text-foreground drop-shadow-2xl px-4 w-full text-center"
             >
-              {showFullTitle ? title : 'IIMC'}
+              {showFullTitle ? 'Isipathana International Meditation Center' : 'IIMC'}
             </motion.h1>
           </AnimatePresence>
         </div>

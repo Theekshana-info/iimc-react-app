@@ -231,8 +231,8 @@ CREATE TRIGGER on_auth_user_created
 
 -- Seed site_settings
 INSERT INTO public.site_settings (key, value, description) VALUES
-  ('site_name', 'Serenity Meditation Center', 'The name of the meditation center'),
-  ('hero_title', 'Find Your Inner Peace', 'Hero section title'),
+  ('site_name', 'IIMC', 'The name of the meditation center'),
+  ('hero_title', 'Isipathana International Meditation Center', 'Hero section title'),
   ('hero_subtitle', 'Join us on a journey of mindfulness and self-discovery', 'Hero section subtitle'),
   ('about_title', 'About Our Center', 'About page title'),
   ('about_content', 'We are a community dedicated to the practice of meditation and mindfulness.', 'About page content'),
