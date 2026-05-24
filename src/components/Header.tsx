@@ -47,23 +47,15 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8 relative">
-      <div className="container mx-auto neu-header rounded-full flex h-16 items-center justify-between px-4 sm:px-6">
+    <header className="fixed top-4 left-0 right-0 z-50 w-full px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto rounded-full flex h-16 items-center justify-between px-4 sm:px-6 transition-all duration-300 bg-background/80 dark:bg-background/80 backdrop-blur-xl border border-border shadow-lg">
         <Link to="/" className="flex items-center gap-2">
           <img
             src={iimcLogo}
             alt="IIMC Logo"
-            className="h-8 sm:h-9 w-8 sm:w-9 rounded-full object-cover neu-inset p-0.5"
+            className="h-8 sm:h-9 w-8 sm:w-9 rounded-full object-cover p-0.5 border border-border"
           />
-          <span
-            className="text-xl sm:text-2xl font-bold"
-            style={{
-              background: 'var(--gradient-primary)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
+          <span className="text-xl sm:text-2xl font-bold text-primary">
             IIMC
           </span>
         </Link>
@@ -74,7 +66,7 @@ export function Header() {
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm font-bold text-muted-foreground hover:text-primary transition-smooth whitespace-nowrap"
+              className="text-sm font-bold transition-colors duration-300 whitespace-nowrap text-muted-foreground hover:text-primary"
             >
               {link.label}
             </Link>
@@ -92,21 +84,36 @@ export function Header() {
             Donate
           </Button>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/admin')}
+            >
               Admin
             </Button>
           )}
           {user ? (
             <>
-              <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/profile')}
+              >
                 Profile
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+              >
                 Logout
               </Button>
             </>
           ) : (
-            <Button size="sm" onClick={() => navigate('/login')}>
+            <Button
+              size="sm"
+              onClick={() => navigate('/login')}
+            >
               Sign In
             </Button>
           )}
@@ -136,13 +143,13 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="lg:hidden neu-inset rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto">
+        <div className="lg:hidden rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto bg-background/90 dark:bg-background/90 backdrop-blur-xl border border-border shadow-lg transition-all duration-300">
           <nav className="flex flex-col p-4 space-y-1">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-sm font-medium text-muted-foreground hover:text-primary py-3 px-3 rounded-md hover:bg-muted/50 transition-smooth"
+                className="text-sm font-medium py-3 px-3 rounded-md hover:bg-muted/50 transition-smooth text-muted-foreground hover:text-primary"
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
@@ -169,7 +176,12 @@ export function Header() {
                   >
                     Profile
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleLogout}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={handleLogout}
+                  >
                     Logout
                   </Button>
                 </>

@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
-import Typewriter from 'typewriter-effect';
 import heroVideo from '@/assets/hero-video.mp4';
 import mobileVideo from '@/assets/mobile-loop.mp4';
 
+const phrases = [
+  { text: "Find ", highlight: "inner peace" },
+  { text: "Begin your ", highlight: "meditation journey" },
+  { text: "Discover ", highlight: "mindfulness" },
+  { text: "Calm your ", highlight: "mind" },
+  { text: "Experience ", highlight: "true serenity" }
+];
+
 export function Hero() {
   const navigate = useNavigate();
-
-  const [showFullTitle, setShowFullTitle] = useState(true);
+  const [phraseIndex, setPhraseIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setShowFullTitle((prev) => !prev);
-    }, 4000); // Toggle every 4 seconds
+      setPhraseIndex((prev) => (prev + 1) % phrases.length);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <section className="relative min-h-[85vh] sm:min-h-[600px] md:min-h-[700px] max-h-[90vh] sm:max-h-none flex items-center justify-center overflow-hidden -mt-24 pt-24">
+    <section className="relative h-screen max-h-[900px] min-h-[600px] flex items-center justify-center overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -42,90 +47,69 @@ export function Hero() {
         >
           <source src={mobileVideo} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/70 animate-breathe" />
-        {/* Dark overlay for text legibility on mobile */}
-        <div className="absolute inset-0 sm:hidden" style={{ background: 'rgba(0,0,0,0.35)' }} />
-        <div className="absolute top-20 left-[10%] w-32 h-32 bg-primary/5 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-[15%] w-40 h-40 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        
+        {/* Atmospheric Cinematic Dark Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/70" />
       </div>
 
-      <div className="relative z-10 text-center max-w-4xl w-full px-4 space-y-4 sm:space-y-8 mt-32 sm:mt-0 pb-4 sm:pb-0">
-        <div className="relative animate-fade-in-up flex justify-center items-center min-h-[160px] sm:min-h-[200px] md:min-h-[250px] w-full">
+      <div className="relative z-10 text-center max-w-2xl w-full px-6 sm:px-8 space-y-5 sm:space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="space-y-3"
+        >
+          <span className="text-xs sm:text-sm tracking-[0.3em] uppercase text-white/70 font-medium block">
+            IIMC
+          </span>
+          <h1 
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+          >
+            Isipathana International Meditation Center
+          </h1>
+        </motion.div>
+
+        {/* Subtitle with fixed height to prevent layout shifts */}
+        <div className="min-h-[2.5rem] flex items-center justify-center">
           <AnimatePresence mode="wait">
-            <motion.h1
-              key={showFullTitle ? 'full' : 'short'}
-              initial={{ opacity: 0, y: 20 }}
+            <motion.p
+              key={phraseIndex}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white sm:text-black dark:text-foreground drop-shadow-2xl px-4 w-full text-center" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
+              className="text-base sm:text-lg md:text-xl font-normal text-white/80"
             >
-              {showFullTitle ? 'Isipathana International Meditation Center' : 'IIMC'}
-            </motion.h1>
+              {phrases[phraseIndex].text}
+              <span className="text-sky-300 font-semibold">{phrases[phraseIndex].highlight}</span>
+            </motion.p>
           </AnimatePresence>
         </div>
 
-        <div className="animate-fade-in-up [animation-delay:200ms] opacity-0 [animation-fill-mode:forwards] min-h-[60px] sm:min-h-[80px] flex items-center justify-center">
-          <div className="text-base sm:text-xl md:text-2xl lg:text-3xl text-white sm:text-black dark:text-foreground/90 drop-shadow-lg font-medium text-center flex flex-wrap justify-center items-center gap-x-2" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.7)' }}>
-            <span className="whitespace-pre">Join us on </span>
-            <span className="font-bold drop-shadow-md inline-block">
-              <Typewriter
-                options={{
-                  loop: true,
-                  delay: 20,
-                  deleteSpeed: 10,
-                  autoStart: true,
-                }}
-                onInit={(typewriter) => {
-                  typewriter
-                    .typeString('<span style="color: #9d4012ff;">a path to true inner peace.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .typeString('<span style="color: #9d4012ff;">a quest for mental clarity.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .typeString('<span style="color: #9d4012ff;">an awakening of the mind.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .typeString('<span style="color: #9d4012ff;">a journey toward daily balance.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .typeString('<span style="color: #9d4012ff;">a retreat into absolute stillness.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .typeString('<span style="color: #9d4012ff;">the road to focused mindfulness.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .typeString('<span style="color: #9d4012ff;">an exploration of your inner self.</span>')
-                    .pauseFor(2500)
-                    .deleteAll(10)
-                    .start();
-                }}
-              />
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in-up [animation-delay:400ms] opacity-0 [animation-fill-mode:forwards]">
-          <Button
-            size="lg"
-            className="shadow-glow hover-glow transition-smooth text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+        <motion.div 
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2"
+        >
+          <button
+            className="bg-white text-black font-semibold rounded-full px-8 py-3 text-sm sm:text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/10 w-full sm:w-auto"
             onClick={() => navigate('/events')}
           >
             Explore Events
-          </Button>
-          <Button
-            size="lg"
-            variant="ghost"
-            className="hover-lift backdrop-blur-sm border border-white/40 text-white sm:text-foreground bg-black/20 sm:bg-background/50 hover:bg-white/10 text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto"
+          </button>
+          <button
+            className="bg-transparent border border-white/30 text-white/90 font-medium rounded-full px-8 py-3 text-sm sm:text-base hover:bg-white/10 hover:border-white/50 transition-all duration-300 w-full sm:w-auto"
             onClick={() => navigate('/about')}
           >
             Learn More
-          </Button>
-        </div>
+          </button>
+        </motion.div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      {/* Dark fade transition at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
     </section>
   );
 }
