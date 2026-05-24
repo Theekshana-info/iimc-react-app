@@ -102,13 +102,13 @@ export function Hero() {
           className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full pt-4 pb-4 sm:pb-8"
         >
           <button
-            className="bg-white text-black font-semibold rounded-full px-8 py-3.5 text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/10 w-full sm:w-auto"
+            className="bg-sky-400 text-slate-950 font-semibold rounded-full px-8 py-3.5 text-base hover:bg-sky-300 transition-all duration-300 shadow-lg shadow-sky-900/10 w-full sm:w-auto"
             onClick={() => navigate('/events')}
           >
             Explore Events
           </button>
           <button
-            className="bg-transparent border border-white/30 text-white/90 font-medium rounded-full px-8 py-3.5 text-base hover:bg-white/10 hover:border-white/50 transition-all duration-300 w-full sm:w-auto"
+            className="bg-white text-slate-950 font-semibold rounded-full px-8 py-3.5 text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/5 w-full sm:w-auto"
             onClick={() => navigate('/about')}
           >
             Learn More
