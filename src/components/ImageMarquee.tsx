@@ -14,7 +14,7 @@ export function ImageMarquee() {
     const trackImages = [...images, ...images];
 
     return (
-        <div className="relative w-full overflow-hidden">
+        <div className="relative w-full overflow-hidden pb-6">
             <div className="marquee-fade-left" aria-hidden="true" />
             <div className="marquee-fade-right" aria-hidden="true" />
 
@@ -33,6 +33,8 @@ export function ImageMarquee() {
                     </div>
                 ))}
             </div>
+            {/* Bottom fade so grid doesn't cut off abruptly */}
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
         </div>
     );
 }

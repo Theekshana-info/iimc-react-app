@@ -48,7 +48,7 @@ export function Header() {
 
   return (
     <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8 relative">
-      <div className="container mx-auto neu-header rounded-full flex h-16 items-center justify-between px-6">
+      <div className="container mx-auto neu-header rounded-full flex h-16 items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2">
           <img
             src={iimcLogo}
@@ -113,7 +113,7 @@ export function Header() {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="flex lg:hidden items-center gap-2">
+        <div className="flex lg:hidden items-center gap-3 ml-auto">
           <Button
             variant="outline"
             size="sm"

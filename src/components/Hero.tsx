@@ -19,7 +19,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative min-h-[650px] sm:min-h-[600px] md:min-h-[700px] flex items-center justify-center overflow-hidden -mt-24 pt-24">
+    <section className="relative min-h-[85vh] sm:min-h-[600px] md:min-h-[700px] max-h-[90vh] sm:max-h-none flex items-center justify-center overflow-hidden -mt-24 pt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -43,11 +43,13 @@ export function Hero() {
           <source src={mobileVideo} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/70 animate-breathe" />
+        {/* Dark overlay for text legibility on mobile */}
+        <div className="absolute inset-0 sm:hidden" style={{ background: 'rgba(0,0,0,0.35)' }} />
         <div className="absolute top-20 left-[10%] w-32 h-32 bg-primary/5 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-20 right-[15%] w-40 h-40 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
       </div>
 
-      <div className="relative z-10 text-center max-w-4xl w-full px-4 space-y-6 sm:space-y-8 mt-40 sm:mt-0">
+      <div className="relative z-10 text-center max-w-4xl w-full px-4 space-y-4 sm:space-y-8 mt-32 sm:mt-0 pb-4 sm:pb-0">
         <div className="relative animate-fade-in-up flex justify-center items-center min-h-[160px] sm:min-h-[200px] md:min-h-[250px] w-full">
           <AnimatePresence mode="wait">
             <motion.h1
@@ -56,7 +58,7 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-black dark:text-foreground drop-shadow-2xl px-4 w-full text-center"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white sm:text-black dark:text-foreground drop-shadow-2xl px-4 w-full text-center" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
             >
               {showFullTitle ? 'Isipathana International Meditation Center' : 'IIMC'}
             </motion.h1>
@@ -64,7 +66,7 @@ export function Hero() {
         </div>
 
         <div className="animate-fade-in-up [animation-delay:200ms] opacity-0 [animation-fill-mode:forwards] min-h-[60px] sm:min-h-[80px] flex items-center justify-center">
-          <div className="text-base sm:text-xl md:text-2xl lg:text-3xl text-black dark:text-foreground/90 drop-shadow-lg font-medium text-center flex flex-wrap justify-center items-center gap-x-2">
+          <div className="text-base sm:text-xl md:text-2xl lg:text-3xl text-white sm:text-black dark:text-foreground/90 drop-shadow-lg font-medium text-center flex flex-wrap justify-center items-center gap-x-2" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.7)' }}>
             <span className="whitespace-pre">Join us on </span>
             <span className="font-bold drop-shadow-md inline-block">
               <Typewriter
@@ -107,15 +109,15 @@ export function Hero() {
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in-up [animation-delay:400ms] opacity-0 [animation-fill-mode:forwards]">
           <Button
             size="lg"
-            className="shadow-glow hover-glow transition-smooth text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto"
+            className="shadow-glow hover-glow transition-smooth text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => navigate('/events')}
           >
             Explore Events
           </Button>
           <Button
             size="lg"
-            variant="outline"
-            className="hover-lift backdrop-blur-sm bg-background/50 text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto"
+            variant="ghost"
+            className="hover-lift backdrop-blur-sm border border-white/40 text-white sm:text-foreground bg-black/20 sm:bg-background/50 hover:bg-white/10 text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 w-full sm:w-auto"
             onClick={() => navigate('/about')}
           >
             Learn More
