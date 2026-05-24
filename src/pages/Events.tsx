@@ -54,58 +54,55 @@ export default function Events() {
           </p>
         </ScrollReveal>
 
-        <div className="flex flex-wrap justify-center gap-6">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-6">
           {events?.map((event, index) => (
-            <ScrollReveal key={event.id} delay={index * 80} className="h-full w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+            <ScrollReveal key={event.id} delay={index * 80} className="h-full w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
               <Card className="shadow-soft hover:shadow-glow transition-smooth h-full flex flex-col">
                 {event.image_url && (
                   <img
                     src={event.image_url}
                     alt={event.title}
-                    className="w-full h-48 object-cover rounded-t-lg"
+                    className="w-full h-32 sm:h-48 object-cover rounded-t-lg"
                   />
                 )}
-                <CardHeader>
-                  <div className="flex justify-between items-start gap-4">
-                    <CardTitle>{event.title}</CardTitle>
+                <CardHeader className="p-3 sm:p-6">
+                  <div className="flex justify-between items-start gap-2">
+                    <CardTitle className="text-base sm:text-lg md:text-xl font-bold line-clamp-2">{event.title}</CardTitle>
                     {event.is_pinned && (
-                      <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 shrink-0">
-                        <Pin className="w-3 h-3 mr-1" />
+                      <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 shrink-0 text-[10px] sm:text-xs px-1.5 py-0.5">
+                        <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
                         Pinned
                       </Badge>
                     )}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-2 sm:space-y-3 flex flex-col flex-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                     {event.recurrence_type && event.recurrence_type !== 'none'
-                      ? <RefreshCw className="h-4 w-4 shrink-0" />
-                      : <Calendar className="h-4 w-4 shrink-0" />
+                      ? <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                      : <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                     }
-                    <span>{formatEventSchedule(event)}</span>
+                    <span className="line-clamp-1">{formatEventSchedule(event)}</span>
                   </div>
                   {event.location && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 shrink-0" />
-                      {event.location}
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                      <span className="line-clamp-1">{event.location}</span>
                     </div>
                   )}
                   {event.capacity && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4 shrink-0" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                       Capacity: {event.capacity}
                     </div>
                   )}
                   {event.price !== null && (
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <DollarSign className="h-4 w-4 shrink-0" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold">
+                      <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                       {event.price > 0 ? `LKR ${event.price}` : 'Free'}
                     </div>
                   )}
-                  <p className="text-muted-foreground line-clamp-3">
-                    {event.description?.replace(/<[^>]*>?/gm, '')}
-                  </p>
-                  <Button className="w-full mt-auto" onClick={() => navigate(`/events/${event.id}`)}>
+                  <Button className="w-full mt-auto text-xs sm:text-sm h-9 sm:h-10" onClick={() => navigate(`/events/${event.id}`)}>
                     View Details
                   </Button>
                 </CardContent>

@@ -35,6 +35,20 @@ export function EventsManager() {
   const [recurrenceType, setRecurrenceType] = useState('none');
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
 
+  const getTodayLocalString = () => {
+    const date = new Date();
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  };
+
+  const handleRecurrenceChange = (value: string) => {
+    setRecurrenceType(value);
+    if (value === 'daily' || value === 'weekly') {
+      setEventDate('');
+    }
+  };
+
   const { data: events } = useQuery({
     queryKey: ['admin-events'],
     queryFn: async () => {
@@ -221,7 +235,13 @@ export function EventsManager() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="eventDate">Start Date / Event Date *</Label>
-                <Input id="eventDate" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                <Input 
+                  id="eventDate" 
+                  type="date" 
+                  value={eventDate} 
+                  onChange={(e) => setEventDate(e.target.value)} 
+                  min={(!editingEvent && recurrenceType === 'none') ? getTodayLocalString() : undefined}
+                />
               </div>
               <div>
                 <Label htmlFor="eventTime">Time</Label>
@@ -232,16 +252,32 @@ export function EventsManager() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Recurrence</Label>
-                <Select value={recurrenceType} onValueChange={setRecurrenceType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select recurrence" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">One-time Event</SelectItem>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly (Specific Days)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Select 
+                      value={recurrenceType === 'none' ? undefined : recurrenceType} 
+                      onValueChange={handleRecurrenceChange}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl border-transparent bg-background px-4 py-2 text-base md:text-sm neu-inset transition-all focus:outline focus:outline-2 focus:outline-[#268ad1] focus:ring-0">
+                        <SelectValue placeholder="One-time Event" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly (Specific Days)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {recurrenceType !== 'none' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleRecurrenceChange('none')}
+                      className="h-12 px-3 rounded-xl border-transparent bg-background neu-btn text-destructive hover:text-destructive/80"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </div>
               <div>
                 <Label htmlFor="location">Location</Label>
