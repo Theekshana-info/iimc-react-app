@@ -24,7 +24,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative h-screen max-h-[900px] min-h-[600px] flex items-center justify-center overflow-hidden">
+    <section className="relative h-screen max-h-[900px] min-h-[600px] flex flex-col items-center justify-between py-12 sm:py-16 md:py-20 overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -52,55 +52,63 @@ export function Hero() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/70" />
       </div>
 
-      <div className="relative z-10 text-center max-w-2xl w-full px-6 sm:px-8 space-y-5 sm:space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="space-y-3"
-        >
-          <span className="text-xs sm:text-sm tracking-[0.3em] uppercase text-white/70 font-medium block">
-            IIMC
-          </span>
-          <h1 
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
-            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
-          >
-            Isipathana International Meditation Center
-          </h1>
-        </motion.div>
+      {/* Main Content Wrapper */}
+      <div className="relative z-10 flex-1 flex flex-col justify-between items-center w-full max-w-2xl px-6 sm:px-8">
+        {/* Top spacer to push text down under the fixed Header */}
+        <div className="h-16 sm:h-20" />
 
-        {/* Subtitle with fixed height to prevent layout shifts */}
-        <div className="min-h-[2.5rem] flex items-center justify-center">
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={phraseIndex}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              className="text-base sm:text-lg md:text-xl font-normal text-white/80"
+        {/* Text Container (Title + Subtitle) */}
+        <div className="text-center space-y-4 sm:space-y-6 my-auto py-4">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="space-y-3"
+          >
+            <span className="text-xs sm:text-sm tracking-[0.3em] uppercase text-white/70 font-medium block">
+              IIMC
+            </span>
+            <h1 
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
+              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
             >
-              {phrases[phraseIndex].text}
-              <span className="text-sky-300 font-semibold">{phrases[phraseIndex].highlight}</span>
-            </motion.p>
-          </AnimatePresence>
+              Isipathana International Meditation Center
+            </h1>
+          </motion.div>
+
+          {/* Subtitle with fixed height to prevent layout shifts */}
+          <div className="min-h-[2.5rem] flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={phraseIndex}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+                className="text-base sm:text-lg md:text-xl font-normal text-white/80"
+              >
+                {phrases[phraseIndex].text}
+                <span className="text-sky-300 font-semibold">{phrases[phraseIndex].highlight}</span>
+              </motion.p>
+            </AnimatePresence>
+          </div>
         </div>
 
+        {/* Buttons Container - positioned relative to the screen bottom */}
         <motion.div 
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full pt-4 pb-4 sm:pb-8"
         >
           <button
-            className="bg-white text-black font-semibold rounded-full px-8 py-3 text-sm sm:text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/10 w-full sm:w-auto"
+            className="bg-white text-black font-semibold rounded-full px-8 py-3.5 text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/10 w-full sm:w-auto"
             onClick={() => navigate('/events')}
           >
             Explore Events
           </button>
           <button
-            className="bg-transparent border border-white/30 text-white/90 font-medium rounded-full px-8 py-3 text-sm sm:text-base hover:bg-white/10 hover:border-white/50 transition-all duration-300 w-full sm:w-auto"
+            className="bg-transparent border border-white/30 text-white/90 font-medium rounded-full px-8 py-3.5 text-base hover:bg-white/10 hover:border-white/50 transition-all duration-300 w-full sm:w-auto"
             onClick={() => navigate('/about')}
           >
             Learn More
@@ -109,7 +117,7 @@ export function Hero() {
       </div>
 
       {/* Dark fade transition at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />
     </section>
   );
 }
