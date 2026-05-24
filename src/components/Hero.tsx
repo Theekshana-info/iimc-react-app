@@ -116,8 +116,8 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Dark fade transition at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />
+      {/* Light blue fade transition at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background via-sky-100/30 dark:via-sky-950/20 to-transparent pointer-events-none" />
     </section>
   );
 }
