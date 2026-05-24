@@ -1,8 +1,8 @@
 import { useSetting } from '@/hooks/useSetting';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { motion } from 'framer-motion';
 import image1 from '@/assets/iimc-about-page-images/iimc-loby-1.jpeg';
 import image2 from '@/assets/iimc-about-page-images/iimc-loby-2.jpeg';
 import image3 from '@/assets/iimc-about-page-images/iimc-loby-3.jpeg';
@@ -33,10 +33,8 @@ const aboutImages = [
 ];
 
 export default function About() {
-  const isMobile = useIsMobile();
   const { value: title } = useSetting('about_title');
   const { value: content } = useSetting('about_content');
-  const visibleImages = isMobile ? aboutImages.slice(0, 9) : aboutImages;
 
   return (
     <div className="min-h-screen py-12 sm:py-20">
@@ -53,26 +51,35 @@ export default function About() {
         </ScrollReveal>
       </div>
 
-      <ScrollReveal delay={150}>
-        <div className="container px-4 max-w-6xl">
-          <div className="about-gallery">
-            {visibleImages.map((image, index) => (
-              <div key={`${image}-${index}`} className="about-gallery-item">
-                <img
-                  src={image}
-                  alt={`About gallery image ${index + 1}`}
-                  className="about-float about-gallery-image"
-                  style={{
-                    animationDelay: `${index * 0.25}s`,
-                    animationDuration: `${6 + (index % 4)}s`,
-                  }}
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
+      <div className="container px-4 max-w-6xl">
+        <div className="about-gallery">
+          {aboutImages.map((image, index) => (
+            <motion.div
+              key={`${image}-${index}`}
+              className="about-gallery-item"
+              initial={{ opacity: 0, y: 70, scale: 0.93, rotate: index % 2 === 0 ? -1.5 : 1.5 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{
+                duration: 0.8,
+                delay: (index % 3) * 0.12, // Beautiful cascading delay
+                ease: [0.16, 1, 0.3, 1] // Smooth cinematic ease-out
+              }}
+            >
+              <img
+                src={image}
+                alt={`About gallery image ${index + 1}`}
+                className="about-float about-gallery-image transition-all duration-500 hover:scale-105 hover:shadow-xl hover:z-10 cursor-pointer"
+                style={{
+                  animationDelay: `${index * 0.25}s`,
+                  animationDuration: `${6 + (index % 4)}s`,
+                }}
+                loading="lazy"
+              />
+            </motion.div>
+          ))}
         </div>
-      </ScrollReveal>
+      </div>
 
       <div className="container px-4 max-w-4xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mt-8 sm:mt-12">
