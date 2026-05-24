@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
 import Typewriter from 'typewriter-effect';
 import heroVideo from '@/assets/hero-video.mp4';
+import mobileVideo from '@/assets/mobile-loop.mp4';
 
 export function Hero() {
   const navigate = useNavigate();
@@ -21,14 +22,25 @@ export function Hero() {
     <section className="relative min-h-[650px] sm:min-h-[600px] md:min-h-[700px] flex items-center justify-center overflow-hidden -mt-24 pt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
+        {/* Desktop Video */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out hidden sm:block"
         >
           <source src={heroVideo} type="video/mp4" />
+        </video>
+        {/* Mobile Video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out block sm:hidden"
+        >
+          <source src={mobileVideo} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/70 animate-breathe" />
         <div className="absolute top-20 left-[10%] w-32 h-32 bg-primary/5 rounded-full blur-3xl animate-float" />
