@@ -47,8 +47,8 @@ export function Header() {
   ];
 
   return (
-    <header className="fixed top-4 left-0 right-0 z-50 w-full px-4 sm:px-6 lg:px-8">
-      <div className="container mx-auto rounded-full flex h-16 items-center justify-between px-4 sm:px-6 transition-all duration-300 bg-background/80 dark:bg-background/80 backdrop-blur-xl border border-border shadow-lg">
+    <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto rounded-full flex h-16 items-center justify-between px-4 sm:px-6 transition-all duration-300 bg-sky-100/80 dark:bg-sky-950/75 backdrop-blur-xl border border-white/50 dark:border-sky-900/30 shadow-[inset_0_1px_2px_rgba(255,255,255,0.75)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] shadow-md shadow-sky-950/5 dark:shadow-black/30">
         <Link to="/" className="flex items-center gap-2">
           <img
             src={iimcLogo}
@@ -66,7 +66,7 @@ export function Header() {
             <Link
               key={link.to}
               to={link.to}
-              className="text-sm font-bold transition-colors duration-300 whitespace-nowrap text-muted-foreground hover:text-primary"
+              className="text-sm font-bold transition-colors duration-300 whitespace-nowrap text-black dark:text-white hover:text-primary"
             >
               {link.label}
             </Link>
@@ -143,13 +143,13 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="lg:hidden rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto bg-background/90 dark:bg-background/90 backdrop-blur-xl border border-border shadow-lg transition-all duration-300">
+        <div className="lg:hidden rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto bg-sky-100/90 dark:bg-sky-950/90 backdrop-blur-xl border border-white/50 dark:border-sky-900/40 shadow-lg shadow-sky-950/10 dark:shadow-black/30 transition-all duration-300">
           <nav className="flex flex-col p-4 space-y-1">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-sm font-medium py-3 px-3 rounded-md hover:bg-muted/50 transition-smooth text-muted-foreground hover:text-primary"
+                className="text-sm font-medium py-3 px-3 rounded-md hover:bg-muted/50 transition-smooth text-black dark:text-white hover:text-primary"
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}

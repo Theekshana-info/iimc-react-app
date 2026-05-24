@@ -24,7 +24,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative h-screen max-h-[900px] min-h-[600px] flex flex-col items-center justify-between py-12 sm:py-16 md:py-20 overflow-hidden">
+    <section className="relative h-screen max-h-[900px] min-h-[600px] flex flex-col items-center justify-between py-12 sm:py-16 md:py-20 overflow-hidden -mt-24 pt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -57,39 +57,23 @@ export function Hero() {
         {/* Top spacer to push text down under the fixed Header */}
         <div className="h-16 sm:h-20" />
 
-        {/* Text Container (Title + Subtitle) */}
-        <div className="text-center space-y-4 sm:space-y-6 my-auto py-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="space-y-3"
-          >
-            <span className="text-xs sm:text-sm tracking-[0.3em] uppercase text-white/70 font-medium block">
-              IIMC
-            </span>
-            <h1 
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
-              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
-            >
-              Isipathana International Meditation Center
-            </h1>
-          </motion.div>
-
-          {/* Subtitle with fixed height to prevent layout shifts */}
-          <div className="min-h-[2.5rem] flex items-center justify-center">
+        {/* Text Container (Tagline/Title) */}
+        <div className="text-center my-auto py-4">
+          {/* Subtitle elevated to primary H1 with fixed height to prevent layout shifts */}
+          <div className="min-h-[2.5rem] sm:min-h-[3.5rem] flex items-center justify-center">
             <AnimatePresence mode="wait">
-              <motion.p
+              <motion.h1
                 key={phraseIndex}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.6, ease: "easeInOut" }}
-                className="text-base sm:text-lg md:text-xl font-normal text-white/80"
+                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white/95 leading-tight"
+                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
               >
                 {phrases[phraseIndex].text}
-                <span className="text-sky-300 font-semibold">{phrases[phraseIndex].highlight}</span>
-              </motion.p>
+                <span className="text-sky-300 font-extrabold">{phrases[phraseIndex].highlight}</span>
+              </motion.h1>
             </AnimatePresence>
           </div>
         </div>
