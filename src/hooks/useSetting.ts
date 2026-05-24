@@ -32,8 +32,13 @@ export function useSetting(key: string) {
     },
   });
 
+  const getSettingValue = () => {
+    const val = setting?.value;
+    return val || '';
+  };
+
   return {
-    value: setting?.value || '',
+    value: getSettingValue(),
     loading: isLoading,
     update: updateMutation.mutate,
   };

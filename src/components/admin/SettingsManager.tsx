@@ -51,9 +51,13 @@ export function SettingsManager() {
     updateMutation.mutate({ key, value: editValue });
   };
 
+  const filteredSettings = settings?.filter(
+    (setting) => setting.key !== 'contact_phone' && setting.key !== 'contact_email'
+  );
+
   return (
     <div className="space-y-4">
-      {settings?.map((setting) => (
+      {filteredSettings?.map((setting) => (
         <Card key={setting.key}>
           <CardContent className="pt-6">
             {editingKey === setting.key ? (

@@ -3,13 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollReveal } from '@/components/ScrollReveal';
-import { useSetting } from '@/hooks/useSetting';
+import { CONTACT_INFO } from '@/lib/constants';
 import { ShieldCheck, ArrowUp, Mail, Phone, ChevronRight } from 'lucide-react';
 
 export default function TermsAndConditions() {
   const navigate = useNavigate();
-  const { value: email } = useSetting('contact_email');
-  const { value: phone } = useSetting('contact_phone');
+  const email = CONTACT_INFO.email;
+  const phone = CONTACT_INFO.phone;
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {

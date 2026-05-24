@@ -3,10 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-export function GoogleSignInButton() {
+export function GoogleSignInButton({ termsAccepted }: { termsAccepted?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
+    if (termsAccepted === false) {
+      toast.error('Please agree to the Terms & Conditions to continue.');
+      return;
+    }
+
     try {
       setLoading(true);
 

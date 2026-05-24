@@ -235,7 +235,5 @@ INSERT INTO public.site_settings (key, value, description) VALUES
   ('hero_title', 'Isipathana International Meditation Center', 'Hero section title'),
   ('hero_subtitle', 'Join us on a journey of mindfulness and self-discovery', 'Hero section subtitle'),
   ('about_title', 'About Our Center', 'About page title'),
-  ('about_content', 'We are a community dedicated to the practice of meditation and mindfulness.', 'About page content'),
-  ('contact_email', 'info@serenitymeditation.com', 'Contact email address'),
-  ('contact_phone', '+1 (555) 123-4567', 'Contact phone number')
+  ('about_content', 'We are a community dedicated to the practice of meditation and mindfulness.', 'About page content')
 ON CONFLICT (key) DO NOTHING;

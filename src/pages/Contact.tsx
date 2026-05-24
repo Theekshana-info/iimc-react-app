@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { useSetting } from '@/hooks/useSetting';
+import { CONTACT_INFO } from '@/lib/constants';
 import { ScrollReveal } from '@/components/ScrollReveal';
 
 const contactSchema = z.object({
@@ -24,8 +24,8 @@ export default function Contact() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { value: contactEmail } = useSetting('contact_email');
-  const { value: contactPhone } = useSetting('contact_phone');
+  const contactEmail = CONTACT_INFO.email;
+  const contactPhone = CONTACT_INFO.phone;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

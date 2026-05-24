@@ -152,10 +152,6 @@ export default function SignUp() {
         title="Create an Account"
         description="Join Isipathana International Meditation Center"
       >
-        <div className="mt-4">
-          <GoogleSignInButton />
-          <AuthDivider />
-        </div>
 
         {googleExistsMessage && (
           <div className="mb-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
@@ -217,15 +213,15 @@ export default function SignUp() {
             </p>
           )}
 
-          <div className="flex items-start gap-3 mt-4">
+          <div className="flex items-start gap-3 mt-6 mb-4">
             <Checkbox
               id="terms"
               checked={termsAccepted}
               onCheckedChange={(checked) => setTermsAccepted(!!checked)}
             />
-            <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+            <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer select-none">
               I agree to the{' '}
-              <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2 hover:opacity-80">
+              <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2 hover:opacity-80 font-semibold">
                 Terms & Conditions
               </Link>{' '}
               and confirm I am at least 18 years old.
@@ -236,13 +232,17 @@ export default function SignUp() {
             type="submit" 
             loading={loading} 
             loadingText="Creating account..." 
-            className="mt-6"
+            className="w-full mt-2"
             disabled={loading || !termsAccepted}
           >
             Sign Up
           </AuthButton>
 
-          <div className="text-center text-sm mt-4">
+          <AuthDivider />
+
+          <GoogleSignInButton termsAccepted={termsAccepted} />
+
+          <div className="text-center text-sm mt-6">
             <span className="text-muted-foreground">Already have an account? </span>
             <Link to="/login" className="text-primary hover:underline font-medium">
               Log in

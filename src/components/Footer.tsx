@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useSetting } from '@/hooks/useSetting';
+import { CONTACT_INFO } from '@/lib/constants';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Facebook, Youtube, Instagram, Twitter, Linkedin } from 'lucide-react';
@@ -15,8 +15,8 @@ const iconMap: Record<string, any> = {
 };
 
 export function Footer() {
-  const { value: email } = useSetting('contact_email');
-  const { value: phone } = useSetting('contact_phone');
+  const email = CONTACT_INFO.email;
+  const phone = CONTACT_INFO.phone;
 
   const { data: socialLinks } = useQuery({
     queryKey: ['social-links'],
