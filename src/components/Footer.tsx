@@ -77,6 +77,11 @@ export function Footer() {
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/donate" className="text-muted-foreground hover:text-primary transition-smooth">Donate</Link></li>
+                <li>
+                  <Link to="/terms" className="text-muted-foreground hover:text-primary transition-smooth">
+                    Terms & Conditions
+                  </Link>
+                </li>
                 <li><Link to="/contact" className="text-muted-foreground hover:text-primary transition-smooth">Contact</Link></li>
               </ul>
             </div>

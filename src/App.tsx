@@ -31,6 +31,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import UserDetail from "./pages/UserDetail";
 import AuthCallback from "./pages/AuthCallback";
+import TermsAndConditions from "./pages/TermsAndConditions";
 import { ScrollToTop } from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const AppLayout = () => {
           <Route path="/gallery" element={<Activities />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/payment-result" element={<PaymentResult />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />

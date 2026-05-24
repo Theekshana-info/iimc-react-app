@@ -14,6 +14,7 @@ import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 import { GoogleSignInButton, AuthDivider } from '@/components/auth/GoogleSignInButton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
@@ -43,6 +44,7 @@ export default function SignUp() {
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [googleExistsMessage, setGoogleExistsMessage] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -63,6 +65,11 @@ export default function SignUp() {
 
   const onSubmit = async (data: SignUpValues) => {
     setGoogleExistsMessage(null);
+
+    if (!termsAccepted) {
+      toast.error('Please accept the Terms & Conditions to create an account.');
+      return;
+    }
 
     // Validate phone separately
     const localPart = phone.replace(/^\+\d+\s*/, '').replace(/\D/g, '');
@@ -210,7 +217,28 @@ export default function SignUp() {
             </p>
           )}
 
-          <AuthButton type="submit" loading={loading} loadingText="Creating account..." className="mt-6">
+          <div className="flex items-start gap-3 mt-4">
+            <Checkbox
+              id="terms"
+              checked={termsAccepted}
+              onCheckedChange={(checked) => setTermsAccepted(!!checked)}
+            />
+            <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+              I agree to the{' '}
+              <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2 hover:opacity-80">
+                Terms & Conditions
+              </Link>{' '}
+              and confirm I am at least 18 years old.
+            </label>
+          </div>
+
+          <AuthButton 
+            type="submit" 
+            loading={loading} 
+            loadingText="Creating account..." 
+            className="mt-6"
+            disabled={loading || !termsAccepted}
+          >
             Sign Up
           </AuthButton>
 

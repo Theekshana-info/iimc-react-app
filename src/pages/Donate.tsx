@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Heart, CreditCard, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -110,6 +110,13 @@ export default function Donate() {
                     <p className="text-xs text-muted-foreground">Your message will help us understand our community better.</p>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-3 mb-1">
+                  By proceeding, you agree to our{' '}
+                  <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2">
+                    Terms & Conditions
+                  </Link>
+                  . All donations are non-refundable. Payments are processed securely via PayHere.
+                </p>
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => setShowDonorForm(false)} className="flex-1">Back</Button>
                   <Button onClick={handleProceedToPayment} className="flex-1" size="lg">Continue to Payment</Button>

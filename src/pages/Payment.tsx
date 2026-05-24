@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Payment() {
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const { amount, type, eventId, description, isAnonymous, donationId } = location.state || {};
 
@@ -46,6 +48,11 @@ export default function Payment() {
 
   const handlePayment = async () => {
     if (!user) return;
+
+    if (!termsAccepted) {
+      toast.error('Please accept the Terms & Conditions to proceed.');
+      return;
+    }
 
     // HIGH-9: Block payment for unverified authenticated users
     if (isAuthenticated && !user.email_confirmed_at) {
@@ -256,11 +263,26 @@ export default function Payment() {
             </div>
           )}
 
+          <div className="flex items-start gap-3 mt-4">
+            <Checkbox
+              id="terms"
+              checked={termsAccepted}
+              onCheckedChange={(checked) => setTermsAccepted(!!checked)}
+            />
+            <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+              I have read and agree to the{' '}
+              <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2 hover:opacity-80">
+                Terms & Conditions
+              </Link>
+              , including the refund policy and PayHere payment processing terms.
+            </label>
+          </div>
+
           <Button
             className="w-full"
             size="lg"
             onClick={handlePayment}
-            disabled={loading || !isEmailVerified}
+            disabled={loading || !termsAccepted || !isEmailVerified}
           >
             {!isEmailVerified
               ? 'Verify Email to Pay'

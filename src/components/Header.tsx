@@ -7,11 +7,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import iimcLogo from '@/assets/iimc-logo.jpg';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,11 +88,10 @@ export function Header() {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`relative px-4 py-2 text-sm font-bold transition-colors duration-300 whitespace-nowrap rounded-full ${
-                  active
+                className={`relative px-4 py-2 text-sm font-bold transition-colors duration-300 whitespace-nowrap rounded-full ${active
                     ? 'text-white dark:text-slate-950 font-extrabold'
                     : 'text-black dark:text-white hover:text-primary'
-                }`}
+                  }`}
               >
                 <span className="relative z-10">{link.label}</span>
                 {active && (
@@ -127,7 +137,7 @@ export function Header() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
               >
                 Logout
               </Button>
@@ -174,11 +184,10 @@ export function Header() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`text-sm font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-between ${
-                    active
+                  className={`text-sm font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-between ${active
                       ? 'text-white bg-primary dark:text-slate-950 dark:bg-sky-400 shadow-sm'
                       : 'text-black dark:text-white hover:bg-sky-200/50 dark:hover:bg-sky-900/40'
-                  }`}
+                    }`}
                   onClick={() => setIsOpen(false)}
                 >
                   <span className="relative z-10">{link.label}</span>
@@ -211,7 +220,7 @@ export function Header() {
                     variant="outline"
                     size="sm"
                     className="w-full justify-start"
-                    onClick={handleLogout}
+                    onClick={() => { setShowLogoutConfirm(true); setIsOpen(false); }}
                   >
                     Logout
                   </Button>
@@ -229,6 +238,22 @@ export function Header() {
           </nav>
         </div>
       )}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to sign in again to access your profile and register for events
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
