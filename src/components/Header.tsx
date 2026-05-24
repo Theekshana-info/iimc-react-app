@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { useState, useEffect } from 'react';
@@ -12,6 +13,14 @@ export function Header() {
   const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (to: string) => {
+    if (to === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(to);
+  };
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -61,16 +70,30 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="text-sm font-bold transition-colors duration-300 whitespace-nowrap text-black dark:text-white hover:text-primary"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2">
+          {navLinks.map((link) => {
+            const active = isActive(link.to);
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`relative px-4 py-2 text-sm font-bold transition-colors duration-300 whitespace-nowrap rounded-full ${
+                  active
+                    ? 'text-white dark:text-slate-950 font-extrabold'
+                    : 'text-black dark:text-white hover:text-primary'
+                }`}
+              >
+                <span className="relative z-10">{link.label}</span>
+                {active && (
+                  <motion.span
+                    layoutId="activeNavBackground"
+                    className="absolute inset-0 bg-primary dark:bg-sky-400 rounded-full shadow-md shadow-primary/20 dark:shadow-sky-400/20"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="hidden lg:flex items-center space-x-3">
@@ -144,17 +167,25 @@ export function Header() {
       {/* Mobile Navigation */}
       {isOpen && (
         <div className="lg:hidden rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto bg-sky-100/90 dark:bg-sky-950/90 backdrop-blur-xl border border-white/50 dark:border-sky-900/40 shadow-lg shadow-sky-950/10 dark:shadow-black/30 transition-all duration-300">
-          <nav className="flex flex-col p-4 space-y-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="text-sm font-medium py-3 px-3 rounded-md hover:bg-muted/50 transition-smooth text-black dark:text-white hover:text-primary"
-                onClick={() => setIsOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="flex flex-col p-4 space-y-1.5">
+            {navLinks.map((link) => {
+              const active = isActive(link.to);
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`text-sm font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-between ${
+                    active
+                      ? 'text-white bg-primary dark:text-slate-950 dark:bg-sky-400 shadow-sm'
+                      : 'text-black dark:text-white hover:bg-sky-200/50 dark:hover:bg-sky-900/40'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="relative z-10">{link.label}</span>
+                  {active && <span className="w-2 h-2 bg-white dark:bg-slate-950 rounded-full relative z-10" />}
+                </Link>
+              );
+            })}
             <div className="border-t mt-4 pt-4 flex flex-col gap-4">
               {isAdmin && (
                 <Button
