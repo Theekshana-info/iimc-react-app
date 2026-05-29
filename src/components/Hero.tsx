@@ -25,7 +25,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative h-screen max-h-[900px] min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+44px)] lg:pb-20 overflow-hidden -mt-24">
+    <section className="relative h-[100dvh] max-h-[900px] min-h-[480px] sm:min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+12px)] lg:pb-20 overflow-hidden -mt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -79,49 +79,50 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Buttons Container - positioned relative to the screen bottom */}
-        <motion.div 
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full pt-4 pb-4 sm:pb-8"
-        >
-          <button
-            className="bg-sky-400 text-slate-950 font-semibold rounded-full px-8 py-3.5 text-base hover:bg-sky-300 transition-all duration-300 shadow-lg shadow-sky-900/10 w-full sm:w-auto"
-            onClick={() => navigate('/events')}
+        {/* Buttons & Scroll Indicator Group */}
+        <div className="w-full flex flex-col items-center gap-4 sm:gap-6 pb-2">
+          <motion.div 
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full"
           >
-            Explore Events
-          </button>
-          <button
-            className="bg-white text-slate-950 font-semibold rounded-full px-8 py-3.5 text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/5 w-full sm:w-auto"
-            onClick={() => navigate('/about')}
-          >
-            Learn More
-          </button>
-        </motion.div>
-      </div>
+            <button
+              className="bg-sky-400 text-slate-950 font-semibold rounded-full px-8 py-3.5 text-base hover:bg-sky-300 transition-all duration-300 shadow-lg shadow-sky-900/10 w-full sm:w-auto"
+              onClick={() => navigate('/events')}
+            >
+              Explore Events
+            </button>
+            <button
+              className="bg-white text-slate-950 font-semibold rounded-full px-8 py-3.5 text-base hover:bg-white/90 transition-all duration-300 shadow-lg shadow-black/5 w-full sm:w-auto"
+              onClick={() => navigate('/about')}
+            >
+              Learn More
+            </button>
+          </motion.div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-[calc(52px+env(safe-area-inset-bottom,0px)+10px)] lg:bottom-6 left-1/2 -translate-x-1/2 z-10"
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="text-white/60 hover:text-white cursor-pointer transition-colors"
-          onClick={() => {
-            window.scrollTo({
-              top: window.innerHeight - 80,
-              behavior: 'smooth'
-            });
-          }}
-        >
-          <ChevronDown className="h-8 w-8" />
-        </motion.div>
-      </motion.div>
+          {/* Scroll Indicator (Nested inside flex container to prevent overlap on all screen sizes) */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 1 }}
+            className="flex flex-col items-center cursor-pointer text-white/60 hover:text-white transition-colors"
+            onClick={() => {
+              window.scrollTo({
+                top: window.innerHeight - 80,
+                behavior: 'smooth'
+              });
+            }}
+          >
+            <motion.div
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ChevronDown className="h-7 w-7" />
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
 
       {/* Light blue fade transition at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background via-sky-100/30 dark:via-sky-950/20 to-transparent pointer-events-none" />
