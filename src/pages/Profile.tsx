@@ -283,7 +283,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen py-20 gradient-hero flex items-center justify-center">
         <div className="container px-4 max-w-md text-center">
-          <Card className="shadow-soft border-border/40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md rounded-3xl p-8 space-y-6">
+          <div className="shadow-soft rounded-3xl p-8 space-y-6 bg-card text-card-foreground border border-transparent">
             <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
               <User className="h-10 w-10 text-primary" />
             </div>
@@ -294,12 +294,12 @@ export default function Profile() {
               </p>
             </div>
             <Button 
-              className="w-full rounded-2xl h-12 text-base font-semibold shadow-glow"
+              className="w-full"
               onClick={() => navigate('/login', { state: { from: { pathname: '/profile' } } })}
             >
               Sign In
             </Button>
-          </Card>
+          </div>
         </div>
       </div>
     );

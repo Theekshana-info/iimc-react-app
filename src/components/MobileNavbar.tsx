@@ -45,7 +45,7 @@ export function MobileNavbar() {
 
   return (
     <nav 
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.3)] transition-all duration-300"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-sky-100/80 dark:bg-sky-950/75 backdrop-blur-xl border-t border-white/50 dark:border-sky-900/30 shadow-[inset_0_1px_2px_rgba(255,255,255,0.75)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] shadow-md shadow-sky-950/5 dark:shadow-black/30 transition-all duration-300"
       style={{
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))',
       }}
