@@ -25,7 +25,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative h-screen max-h-[900px] min-h-[600px] flex flex-col items-center justify-between py-12 sm:py-16 md:py-20 overflow-hidden -mt-24 pt-24">
+    <section className="relative h-screen max-h-[900px] min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+44px)] lg:pb-20 overflow-hidden -mt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -106,7 +106,7 @@ export function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10"
+        className="absolute bottom-[calc(52px+env(safe-area-inset-bottom,0px)+10px)] lg:bottom-6 left-1/2 -translate-x-1/2 z-10"
       >
         <motion.div
           animate={{ y: [0, 8, 0] }}
