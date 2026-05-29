@@ -176,11 +176,13 @@ function getVideoThumb(url: string): string {
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
 
-  // Vimeo – use placeholder since Vimeo thumbnails require API
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return '/placeholder.svg';
+  // Use inline base64 SVG as a placeholder since Vimeo thumbnails require API or as a fallback
+  const placeholder = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAwJyBoZWlnaHQ9JzY3NScgdmlld0JveD0nMCAwIDEyMDAgNjc1Jz48cmVjdCB3aWR0aD0nMTIwMCcgaGVpZ2h0PSc2NzUnIGZpbGw9JyNFQUVBRUEnLz48ZyBvcGFjaXR5PScwLjUnPjxjaXJjbGUgY3g9JzYwMCcgY3k9JzMzNy41JyByPSc2MCcgZmlsbD0nI2ZmZmZmZicgc3Ryb2tlPScjQzlDOUM5JyBzdHJva2Utd2lkdGg9JzIuNScvPjxwYXRoIGQ9J001ODUgMzA3LjUgTDYyNSAzMzcuNSBMNTg1IDM2Ny41IFonIGZpbGw9JyM2NjY2NjYnLz48L2c+PC9zdmc+';
 
-  return '/placeholder.svg';
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return placeholder;
+
+  return placeholder;
 }
 
 export default Gallery;
