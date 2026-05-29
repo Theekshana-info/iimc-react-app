@@ -856,7 +856,7 @@ export default function Profile() {
                       </div>
                     ) : !showResetPanel ? (
                       <div className="flex flex-wrap gap-3">
-                        <Button type="button" onClick={() => setShowResetPanel(true)} className="shadow-glow">
+                        <Button type="button" variant="outline" onClick={() => setShowResetPanel(true)} className="shadow-glow">
                           Change Password
                         </Button>
                         <Button
