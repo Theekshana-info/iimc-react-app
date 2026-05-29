@@ -78,6 +78,26 @@ export default function ResetPassword() {
 
       if (error) throw error;
 
+      // Update profile has_password if it wasn't set yet!
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && !profile.has_password) {
+          const currentMethods = profile.auth_methods ?? [];
+          const newMethods = [...new Set([...currentMethods, 'password'])];
+          await supabase.from('profiles').update({
+            has_password: true,
+            auth_methods: newMethods,
+            updated_at: new Date().toISOString(),
+          }).eq('id', user.id);
+        }
+      }
+
       toast.success('Password updated successfully. Please log in.');
       navigate('/login');
     } catch (error) {

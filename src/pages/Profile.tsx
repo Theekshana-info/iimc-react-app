@@ -13,7 +13,7 @@ import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Calendar, Heart, Loader2, Pencil, Shield, User, Check } from 'lucide-react';
+import { Calendar, Heart, Loader2, Pencil, Shield, User, Check, Mail } from 'lucide-react';
 import { UserActivities } from '@/components/profile/UserActivities';
 
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
@@ -52,6 +52,29 @@ export default function Profile() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+
+  const [sendingSetPasswordEmail, setSendingSetPasswordEmail] = useState(false);
+  const [setPasswordEmailSent, setSetPasswordEmailSent] = useState(false);
+
+  const handleSendSetPasswordLink = async () => {
+    if (!user?.email) {
+      toast.error('User email not found');
+      return;
+    }
+    try {
+      setSendingSetPasswordEmail(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSetPasswordEmailSent(true);
+      toast.success('Password setup link sent. Check your email.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send setup link');
+    } finally {
+      setSendingSetPasswordEmail(false);
+    }
+  };
 
   const handleForgotPassword = async () => {
     if (!user?.email) {
@@ -748,68 +771,58 @@ export default function Profile() {
                         Set a password so you can also log in with email and password.
                       </p>
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="newPassword">New Password</Label>
-                        <PasswordInput
-                          id="newPassword"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmNewPassword">Confirm Password</Label>
-                        <PasswordInput
-                          id="confirmNewPassword"
-                          value={confirmNewPassword}
-                          onChange={(e) => setConfirmNewPassword(e.target.value)}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        disabled={savingPassword}
-                        onClick={async () => {
-                          if (newPassword.length < 8) {
-                            toast.error('Password must be at least 8 characters');
-                            return;
-                          }
-                          if (!/[0-9]/.test(newPassword)) {
-                            toast.error('Password must contain at least one number');
-                            return;
-                          }
-                          if (newPassword !== confirmNewPassword) {
-                            toast.error('Passwords do not match');
-                            return;
-                          }
-                          try {
-                            setSavingPassword(true);
-                            const { error } = await supabase.auth.updateUser({ password: newPassword });
-                            if (error) throw error;
 
-                            // Update profile
-                            const currentMethods = profile?.auth_methods ?? [];
-                            const newMethods = [...new Set([...currentMethods, 'password'])];
-                            await supabase.from('profiles').update({
-                              has_password: true,
-                              auth_methods: newMethods,
-                              updated_at: new Date().toISOString(),
-                            }).eq('id', user.id);
-
-                            setProfile((prev: any) => prev ? { ...prev, has_password: true, auth_methods: newMethods } : prev);
-                            await refreshProfile();
-                            setNewPassword('');
-                            setConfirmNewPassword('');
-                            toast.success('Password set! You can now log in with email and password.');
-                          } catch (err) {
-                            toast.error(err instanceof Error ? err.message : 'Failed to set password');
-                          } finally {
-                            setSavingPassword(false);
-                          }
-                        }}
-                      >
-                        {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set Password'}
-                      </Button>
-                    </div>
+                    {setPasswordEmailSent ? (
+                      <div className="p-5 rounded-xl border border-primary/20 bg-primary/5 space-y-4 animate-fade-in-scale max-w-md">
+                        <div className="flex gap-3">
+                          <div className="mt-0.5 p-1.5 rounded-full bg-primary/10 text-primary flex-shrink-0">
+                            <Check className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground">Check your email</h4>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              We have sent a secure password setup link to your email address:
+                            </p>
+                            <p className="text-xs font-semibold text-foreground mt-1 font-mono bg-card px-2 py-1 rounded border border-border inline-block">
+                              {user?.email}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                              Please check your inbox and follow the link to set your password. You can close this notification once you're done.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end pt-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSetPasswordEmailSent(false)}
+                            className="text-xs"
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-xs text-muted-foreground">
+                          We will send a secure link to your email address (<strong>{user?.email}</strong>) to setup your password.
+                        </p>
+                        <Button
+                          type="button"
+                          disabled={sendingSetPasswordEmail}
+                          onClick={handleSendSetPasswordLink}
+                          className="flex items-center gap-2"
+                        >
+                          {sendingSetPasswordEmail ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                          Send Password Setup Link
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
