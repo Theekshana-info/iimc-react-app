@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import heroVideo from '@/assets/hero-video.mp4';
 import mobileVideo from '@/assets/mobile-loop.mp4';
 
@@ -99,6 +100,28 @@ export function Hero() {
           </button>
         </motion.div>
       </div>
+
+      {/* Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 1 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10"
+      >
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="text-white/60 hover:text-white cursor-pointer transition-colors"
+          onClick={() => {
+            window.scrollTo({
+              top: window.innerHeight - 80,
+              behavior: 'smooth'
+            });
+          }}
+        >
+          <ChevronDown className="h-8 w-8" />
+        </motion.div>
+      </motion.div>
 
       {/* Light blue fade transition at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background via-sky-100/30 dark:via-sky-950/20 to-transparent pointer-events-none" />
