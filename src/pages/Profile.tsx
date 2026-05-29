@@ -392,33 +392,32 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="shadow-soft rounded-3xl p-3 md:col-span-1">
-            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-1 md:pb-0">
-              {navItems.map((item) => {
-                const isActive = activeSection === item.key;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setActiveSection(item.key)}
-                    className={
-                      `flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-smooth flex-shrink-0 ${isActive
-                        ? 'text-primary bg-primary/10'
-                        : 'text-muted-foreground hover:text-primary hover:bg-muted/50'
-                      }`
-                    }
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+        <div className="shadow-soft rounded-3xl p-3 bg-card border border-transparent">
+          <div className="flex gap-1 md:gap-4 pb-1 md:pb-0 w-full">
+            {navItems.map((item) => {
+              const isActive = activeSection === item.key;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveSection(item.key)}
+                  className={
+                    `flex items-center justify-center gap-1 md:gap-2 px-1.5 py-2 md:px-3 md:py-2 rounded-xl text-xs md:text-sm font-medium transition-smooth flex-1 min-w-0 ${isActive
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-primary hover:bg-muted/50'
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4 hidden sm:block" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          <div className="shadow-soft rounded-3xl p-6 md:p-8 md:col-span-2">
+        <div className="shadow-soft rounded-3xl p-6 md:p-8 bg-card border border-transparent">
             {activeSection === 'profile' && (
               <div className="space-y-6">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Profile</h2>
@@ -1030,7 +1029,6 @@ export default function Profile() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       <input
