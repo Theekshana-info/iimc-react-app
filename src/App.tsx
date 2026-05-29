@@ -46,7 +46,7 @@ const AppLayout = () => {
       <ScrollToTop />
       {!hideChrome && <Header />}
       {!hideChrome && <EmailVerificationBanner />}
-      <main className="pb-20 lg:pb-0">
+      <main className="pb-16 lg:pb-0">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />

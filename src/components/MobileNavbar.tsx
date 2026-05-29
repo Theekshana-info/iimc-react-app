@@ -50,7 +50,7 @@ export function MobileNavbar() {
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))',
       }}
     >
-      <div className="flex h-16 items-center justify-around px-2 max-w-md mx-auto">
+      <div className="flex h-[52px] items-center justify-around px-2 max-w-md mx-auto">
         {navItems.map((item) => {
           const active = isActive(item.to);
           const Icon = item.icon;
@@ -83,17 +83,17 @@ export function MobileNavbar() {
                   <img
                     src={profile.avatar_url}
                     alt="Profile"
-                    className={`h-6 w-6 rounded-full object-cover border transition-all ${
+                    className={`h-5 w-5 rounded-full object-cover border transition-all ${
                       active
                         ? 'border-primary dark:border-sky-400 ring-2 ring-primary/20 dark:ring-sky-400/20'
                         : 'border-slate-300 dark:border-slate-700'
                     }`}
                   />
                 ) : (
-                  <Icon className="h-5.5 w-5.5" />
+                  <Icon className="h-5 w-5" />
                 )}
                 
-                <span className="text-[10px] font-semibold mt-1 tracking-wide uppercase select-none">
+                <span className="text-[9px] font-semibold mt-0.5 tracking-wide select-none">
                   {item.label}
                 </span>
               </motion.div>
