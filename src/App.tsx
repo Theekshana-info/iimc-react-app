@@ -40,6 +40,13 @@ const queryClient = new QueryClient();
 const AppLayout = () => {
   const location = useLocation();
   const hideChrome = location.pathname === "/reset-password" || location.pathname === "/auth/callback";
+  const hideFooter = hideChrome || [
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/profile",
+    "/payment"
+  ].includes(location.pathname);
 
   return (
     <>
@@ -81,7 +88,7 @@ const AppLayout = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {!hideChrome && <Footer />}
+      {!hideFooter && <Footer />}
       {!hideChrome && <MobileNavbar />}
     </>
   );
