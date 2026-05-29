@@ -73,7 +73,7 @@ const AppLayout = () => {
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Protected Routes */}
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/admin/users/:id" element={<ProtectedRoute><UserDetail /></ProtectedRoute>} />
 

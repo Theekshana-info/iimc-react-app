@@ -50,43 +50,47 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) {
-        navigate('/login', { state: { from: { pathname: '/profile' } } });
-        return;
-      }
+        if (user) {
+          setUser(user);
 
-      setUser(user);
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+          if (profileData) {
+            setProfile(profileData);
+            setFullName(profileData.full_name || '');
+            setPhone(profileData.phone || '');
+            setDateOfBirth(profileData.date_of_birth || '');
+            setLocation(profileData.location || '');
+            setBio(profileData.bio || '');
+          }
 
-      if (profileData) {
-        setProfile(profileData);
-        setFullName(profileData.full_name || '');
-        setPhone(profileData.phone || '');
-        setDateOfBirth(profileData.date_of_birth || '');
-        setLocation(profileData.location || '');
-        setBio(profileData.bio || '');
-      }
+          const { data: paymentData } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('payment_type', 'donation')
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false });
 
-      const { data: paymentData } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('payment_type', 'donation')
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false });
-
-      if (paymentData) {
-        setDonations(paymentData);
+          if (paymentData) {
+            setDonations(paymentData);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+      } finally {
+        setAuthLoading(false);
       }
     };
 
@@ -267,10 +271,36 @@ export default function Profile() {
   };
 
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen py-20 gradient-hero flex items-center justify-center">
+        <div className="container px-4 max-w-md text-center">
+          <Card className="shadow-soft border-border/40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md rounded-3xl p-8 space-y-6">
+            <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+              <User className="h-10 w-10 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">My Profile</h2>
+              <p className="text-muted-foreground text-sm">
+                Sign in to view your activity feed, manage registrations, track donations, and update your personal information.
+              </p>
+            </div>
+            <Button 
+              className="w-full rounded-2xl h-12 text-base font-semibold shadow-glow"
+              onClick={() => navigate('/login', { state: { from: { pathname: '/profile' } } })}
+            >
+              Sign In
+            </Button>
+          </Card>
+        </div>
       </div>
     );
   }

@@ -36,7 +36,7 @@ export function MobileNavbar() {
       icon: BookOpen,
     },
     {
-      to: user ? '/profile' : '/login',
+      to: '/profile',
       label: 'Profile',
       icon: User,
       isProfile: true,
