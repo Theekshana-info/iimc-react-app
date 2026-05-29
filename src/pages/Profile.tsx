@@ -43,6 +43,7 @@ export default function Profile() {
 
   const [showResetPanel, setShowResetPanel] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   // Password management state
   const [newPassword, setNewPassword] = useState('');
@@ -51,6 +52,27 @@ export default function Profile() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+
+  const handleForgotPassword = async () => {
+    if (!user?.email) {
+      toast.error('User email not found');
+      return;
+    }
+    try {
+      setSendingReset(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setForgotPasswordSent(true);
+      setShowResetPanel(false);
+      toast.success('Reset link sent if the email exists.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send reset link');
+    } finally {
+      setSendingReset(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -795,19 +817,73 @@ export default function Profile() {
                 {profile?.has_password && (
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-semibold">Change Password</h3>
+                      <h3 className="text-sm font-semibold text-foreground">Password Management</h3>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Update your existing password.
+                        Update your existing password or request a reset email.
                       </p>
                     </div>
-                    {!showResetPanel ? (
-                      <Button type="button" onClick={() => setShowResetPanel(true)}>
-                        Change Password
-                      </Button>
+
+                    {forgotPasswordSent ? (
+                      <div className="p-5 rounded-xl border border-primary/20 bg-primary/5 space-y-4 animate-fade-in-scale max-w-md">
+                        <div className="flex gap-3">
+                          <div className="mt-0.5 p-1.5 rounded-full bg-primary/10 text-primary flex-shrink-0">
+                            <Check className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground">Check your email</h4>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              We have sent a secure password reset link to your email address:
+                            </p>
+                            <p className="text-xs font-semibold text-foreground mt-1 font-mono bg-card px-2 py-1 rounded border border-border inline-block">
+                              {user?.email}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                              Please check your inbox and follow the link to reset your password. You can close this notification once you're done.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end pt-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setForgotPasswordSent(false)}
+                            className="text-xs"
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    ) : !showResetPanel ? (
+                      <div className="flex flex-wrap gap-3">
+                        <Button type="button" onClick={() => setShowResetPanel(true)} className="shadow-glow">
+                          Change Password
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={sendingReset}
+                          onClick={handleForgotPassword}
+                          className="hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
+                        >
+                          {sendingReset && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                          Forgot Password?
+                        </Button>
+                      </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-3 max-w-md animate-fade-in-scale">
                         <div className="space-y-2">
-                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <div className="flex justify-between items-center">
+                            <Label htmlFor="currentPassword">Current Password</Label>
+                            <button
+                              type="button"
+                              onClick={handleForgotPassword}
+                              className="text-xs text-[#268ad1] hover:underline font-medium focus:outline-none transition-colors"
+                              disabled={sendingReset}
+                            >
+                              {sendingReset ? 'Sending...' : 'Forgot password?'}
+                            </button>
+                          </div>
                           <PasswordInput
                             id="currentPassword"
                             value={currentPassword}
@@ -830,10 +906,11 @@ export default function Profile() {
                             onChange={(e) => setConfirmNewPassword(e.target.value)}
                           />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 pt-2">
                           <Button
                             type="button"
                             disabled={savingPassword}
+                            className="shadow-glow"
                             onClick={async () => {
                               if (newPassword.length < 8) {
                                 toast.error('Password must be at least 8 characters');
