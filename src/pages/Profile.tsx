@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -372,26 +373,6 @@ export default function Profile() {
   return (
     <div className="min-h-screen py-20 gradient-hero">
       <div className="container px-4 max-w-4xl space-y-6">
-        <div className="shadow-soft rounded-3xl px-4 py-3 md:px-6 flex items-center gap-4">
-          <div className="relative">
-            <Avatar className="h-14 w-14">
-              <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback>
-                <User className="h-6 w-6" />
-              </AvatarFallback>
-            </Avatar>
-            {avatarUploading && (
-              <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </div>
-            )}
-          </div>
-          <div>
-            <p className="font-semibold">{displayName}</p>
-            <p className="text-sm text-muted-foreground">{displayEmail}</p>
-          </div>
-        </div>
-
         <div className="shadow-soft rounded-3xl p-3 bg-card border border-transparent">
           <div className="flex gap-1 md:gap-4 pb-1 md:pb-0 w-full">
             {navItems.map((item) => {
@@ -417,8 +398,16 @@ export default function Profile() {
           </div>
         </div>
 
-        <div className="shadow-soft rounded-3xl p-6 md:p-8 bg-card border border-transparent">
-            {activeSection === 'profile' && (
+        <div className="shadow-soft rounded-3xl p-6 md:p-8 bg-card border border-transparent overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+            >
+              {activeSection === 'profile' && (
               <div className="space-y-6">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Profile</h2>
 
@@ -436,7 +425,11 @@ export default function Profile() {
                       </div>
                     )}
                   </div>
-                  <div>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xl font-bold">{displayName}</p>
+                      <p className="text-sm text-muted-foreground">{displayEmail}</p>
+                    </div>
                     <Button type="button" onClick={handleAvatarClick} disabled={avatarUploading}>
                       Upload Photo
                     </Button>
@@ -1028,7 +1021,9 @@ export default function Profile() {
 
               </div>
             )}
-          </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
       <input

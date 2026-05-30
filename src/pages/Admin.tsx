@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EventsManager } from '@/components/admin/EventsManager';
 import { BlogManager } from '@/components/admin/BlogManager';
@@ -106,10 +107,18 @@ export default function Admin() {
           </CardTitle>
           <CardDescription className="text-sm">{item.desc}</CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-            {item.component}
-          </div>
+        <CardContent className="p-6 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+            >
+              {item.component}
+            </motion.div>
+          </AnimatePresence>
         </CardContent>
       </Card>
     );
