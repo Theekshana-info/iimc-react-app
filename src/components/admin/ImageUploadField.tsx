@@ -97,7 +97,7 @@ export function ImageUploadField({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="upload" className="mt-2">
-          <div className="flex gap-2">
+          <div className="flex justify-center py-1">
             <input
               ref={fileInputRef}
               type="file"
@@ -108,14 +108,15 @@ export function ImageUploadField({
             <Button
               type="button"
               variant="outline"
-              className="w-full text-sm"
+              size="sm"
+              className="w-fit px-6 text-xs font-semibold h-9"
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
             >
               {uploading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
+                <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Uploading...</>
               ) : (
-                <><Upload className="h-4 w-4 mr-2" /> Choose File</>
+                <><Upload className="h-3.5 w-3.5 mr-2" /> Choose File</>
               )}
             </Button>
           </div>

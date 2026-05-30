@@ -1,28 +1,12 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
+import Typewriter from 'typewriter-effect';
 import heroVideo from '@/assets/hero-video.mp4';
 import mobileVideo from '@/assets/mobile-loop.mp4';
 
-const phrases = [
-  { text: "Find ", highlight: "inner peace" },
-  { text: "Begin your ", highlight: "meditation journey" },
-  { text: "Discover ", highlight: "mindfulness" },
-  { text: "Calm your ", highlight: "mind" },
-  { text: "Experience ", highlight: "true serenity" }
-];
-
 export function Hero() {
   const navigate = useNavigate();
-  const [phraseIndex, setPhraseIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPhraseIndex((prev) => (prev + 1) % phrases.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <section className="relative h-[100dvh] max-h-[900px] min-h-[480px] sm:min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+12px)] lg:pb-20 overflow-hidden -mt-24">
@@ -48,7 +32,7 @@ export function Hero() {
         >
           <source src={mobileVideo} type="video/mp4" />
         </video>
-        
+
         {/* Atmospheric Cinematic Dark Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/70" />
       </div>
@@ -59,29 +43,47 @@ export function Hero() {
         <div className="h-16 sm:h-20" />
 
         {/* Text Container (Tagline/Title) */}
-        <div className="text-center my-auto py-4">
-          {/* Subtitle elevated to primary H1 with fixed height to prevent layout shifts */}
-          <div className="min-h-[2.5rem] sm:min-h-[3.5rem] flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              <motion.h1
-                key={phraseIndex}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white/95 leading-tight"
-                style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
-              >
-                {phrases[phraseIndex].text}
-                <span className="text-sky-300 font-extrabold">{phrases[phraseIndex].highlight}</span>
-              </motion.h1>
-            </AnimatePresence>
+        <div className="text-center my-auto py-4 flex flex-col items-center justify-center">
+          <h1
+            className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-widest mb-2 uppercase"
+            style={{ textShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+          >
+            IIMC
+          </h1>
+
+          {/* Elegant Glowing Divider */}
+          <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-sky-200/80 to-transparent my-5 shadow-[0_0_12px_rgba(125,211,252,0.7)]" />
+
+          <div
+            className="min-h-[4rem] sm:min-h-[3rem] text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond',serif] italic font-semibold text-sky-100 tracking-wider max-w-xl mx-auto leading-relaxed"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.35)' }}
+          >
+            <Typewriter
+              options={{
+                strings: [
+                  "Breathe. Relax. Renew.",
+                  "Calm Mind. Peaceful Life.",
+                  "Be Present. Be Peaceful.",
+                  "Pause. Breathe. Flourish.",
+                  "Find Peace Within.",
+                  "Live Mindfully.",
+                  "Embrace Stillness.",
+                  "Journey to Inner Peace.",
+                  "Serenity Starts Here."
+                ],
+                autoStart: true,
+                loop: true,
+                delay: 35,
+                deleteSpeed: 20,
+                cursorClassName: "text-black font-light not-italic animate-pulse ml-1 text-[1.2em] font-sans inline-block align-middle relative -translate-y-[2px]"
+              }}
+            />
           </div>
         </div>
 
         {/* Buttons & Scroll Indicator Group */}
         <div className="w-full flex flex-col items-center gap-4 sm:gap-6 pb-2">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
