@@ -165,6 +165,10 @@ All colors MUST be HSL.
   .neu-btn[data-state="open"] {
     box-shadow: var(--shadow-inset);
   }
+
+  header .neu-btn {
+    box-shadow: none !important;
+  }
 }
 
 @layer utilities {

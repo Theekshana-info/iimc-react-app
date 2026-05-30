@@ -68,7 +68,7 @@ export function Header() {
 
   return (
     <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8">
-      <div className="container mx-auto rounded-full flex h-16 items-center justify-between px-4 sm:px-6 transition-all duration-300 bg-sky-100/80 dark:bg-sky-950/75 backdrop-blur-xl border border-white/50 dark:border-sky-900/30 shadow-[inset_0_1px_2px_rgba(255,255,255,0.75)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] shadow-md shadow-sky-950/5 dark:shadow-black/30">
+      <div className="container mx-auto rounded-full flex h-16 items-center justify-between px-4 sm:px-6 transition-all duration-300 bg-slate-900/15 dark:bg-slate-900/35 backdrop-blur-lg border border-white/50 dark:border-sky-900/30 shadow-[inset_0_1px_2px_rgba(255,255,255,0.75)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] shadow-md shadow-sky-950/5 dark:shadow-black/30">
         <Link to="/" className="flex items-center gap-2">
           <img
             src={iimcLogo}
@@ -176,9 +176,11 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="lg:hidden rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto bg-sky-100/90 dark:bg-sky-950/90 backdrop-blur-xl border border-white/50 dark:border-sky-900/40 shadow-lg shadow-sky-950/10 dark:shadow-black/30 transition-all duration-300">
+        <div className="lg:hidden rounded-3xl absolute left-4 right-4 top-full mt-4 max-h-[80vh] overflow-y-auto bg-slate-900/15 dark:bg-slate-900/55 backdrop-blur-lg border border-white/50 dark:border-sky-900/40 shadow-lg shadow-sky-950/10 dark:shadow-black/30 transition-all duration-300">
           <nav className="flex flex-col p-4 space-y-1.5">
-            {navLinks.map((link) => {
+            {navLinks
+              .filter((link) => !['/', '/events', '/activities', '/blog'].includes(link.to))
+              .map((link) => {
               const active = isActive(link.to);
               return (
                 <Link
