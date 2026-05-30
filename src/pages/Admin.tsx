@@ -149,7 +149,7 @@ export default function Admin() {
         </Select>
       </div>
 
-      <div className="container max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 p-4 lg:p-8 lg:pt-12">
+      <div className="w-full px-4 md:px-8 lg:px-12 flex flex-col lg:flex-row gap-8 py-4 lg:py-8 lg:pt-12">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col w-64 shrink-0 gap-6 sticky top-28 h-[calc(100vh-8rem)]">
           <div className="px-2">
