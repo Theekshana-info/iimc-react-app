@@ -45,7 +45,7 @@ export function MobileNavbar() {
 
   return (
     <div
-      className="lg:hidden fixed left-0 right-0 z-40 w-full px-4 pointer-events-none"
+      className="lg:hidden fixed left-0 right-0 z-50 w-full px-4 pointer-events-none"
       style={{
         bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
       }}

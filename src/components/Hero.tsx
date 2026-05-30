@@ -45,7 +45,7 @@ export function Hero() {
         {/* Text Container (Tagline/Title) */}
         <div className="text-center my-auto py-4 flex flex-col items-center justify-center">
           <h1
-            className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-widest mb-2 uppercase"
+            className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-sky-200 tracking-widest mb-2 uppercase"
             style={{ textShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
           >
             IIMC
@@ -55,7 +55,7 @@ export function Hero() {
           <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-sky-200/80 to-transparent my-5 shadow-[0_0_12px_rgba(125,211,252,0.7)]" />
 
           <div
-            className="min-h-[4rem] sm:min-h-[3rem] text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond',serif] italic font-semibold text-sky-100 tracking-wider max-w-xl mx-auto leading-relaxed"
+            className="min-h-[4rem] sm:min-h-[3rem] text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond',serif] italic font-semibold text-sky-300 tracking-wider max-w-xl mx-auto leading-relaxed"
             style={{ textShadow: '0 2px 8px rgba(0,0,0,0.35)' }}
           >
             <Typewriter
@@ -74,8 +74,8 @@ export function Hero() {
                 autoStart: true,
                 loop: true,
                 delay: 35,
-                deleteSpeed: 20,
-                cursorClassName: "text-black font-light not-italic animate-pulse ml-1 text-[1.2em] font-sans inline-block align-middle relative -translate-y-[2px]"
+                deleteSpeed: 5,
+                cursorClassName: "text-sky-500 font-light not-italic animate-pulse ml-1 text-[1.6em] font-sans inline-block align-middle relative -translate-y-[5.5px]"
               }}
             />
           </div>
