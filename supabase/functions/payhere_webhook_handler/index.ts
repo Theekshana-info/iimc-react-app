@@ -1,4 +1,8 @@
-// Fixes: HIGH-2 (capacity race condition via RPC), HIGH-3 (upsert payments), MEDIUM-6 (CORS)
+// Phase 2: Enhanced payhere_webhook_handler
+// Supports: event_registration (single + multi-session), donation, subscription
+// HIGH-2: capacity race condition via RPC
+// HIGH-3: upsert payments
+// MEDIUM-6: CORS
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
 
@@ -31,9 +35,10 @@ Deno.serve(async (req) => {
     const receivedMd5sig = body.get('md5sig')?.toString() || '';
     const customFields = body.get('custom_1')?.toString() || '';
     const statusMessage = body.get('status_message')?.toString() || '';
+    const recurringId = body.get('recurring_id')?.toString() || '';
 
     console.log('PayHere webhook received:', {
-      orderId, paymentId, statusCode, customFields, statusMessage,
+      orderId, paymentId, statusCode, customFields, statusMessage, recurringId,
     });
 
     // ─── SECURITY: Verify merchant_id matches ───
@@ -80,10 +85,17 @@ Deno.serve(async (req) => {
         attemptStatus = 'failed';
     }
 
-    // Parse custom_1
+    // ─── Parse custom_1 field ───
+    // Formats:
+    //   event_registration:{eventId}
+    //   event_sessions:{eventId}:{sessionId1},{sessionId2},...
+    //   donation:{donationId}
+    //   subscription:{subscriptionId}
     let paymentType: string = 'donation';
     let eventId: string | null = null;
     let donationId: string | null = null;
+    let subscriptionId: string | null = null;
+    let sessionIds: string[] = [];
 
     if (customFields) {
       const parts = customFields.split(':');
@@ -91,8 +103,16 @@ Deno.serve(async (req) => {
 
       if (paymentType === 'event_registration' && parts[1]) {
         eventId = parts[1];
+      } else if (paymentType === 'event_sessions' && parts[1]) {
+        eventId = parts[1];
+        if (parts[2]) {
+          sessionIds = parts[2].split(',').filter(Boolean);
+        }
+        paymentType = 'event_registration'; // normalize for payment record
       } else if (paymentType === 'donation' && parts[1]) {
         donationId = parts[1];
+      } else if (paymentType === 'subscription' && parts[1]) {
+        subscriptionId = parts[1];
       }
     }
 
@@ -132,7 +152,7 @@ Deno.serve(async (req) => {
             currency: payhereCurrency,
             status: 'completed',
             payment_type: paymentType,
-            related_id: eventId || donationId,
+            related_id: eventId || donationId || subscriptionId,
             related_type: paymentType,
             payment_gateway: 'payhere',
           },
@@ -148,24 +168,43 @@ Deno.serve(async (req) => {
 
       console.log('Payment record upserted:', { id: paymentData.id });
 
-      // ─── SUCCESS: Register via atomic RPC (HIGH-2: capacity race condition fix) ───
+      // ─── SUCCESS: Event Registration ───
       if (paymentType === 'event_registration' && eventId && userId) {
-        const { error: registrationError } = await supabaseAdmin
-          .rpc('create_paid_registration', {
-            p_event_id: eventId,
-            p_user_id: userId,
-          });
+        if (sessionIds.length > 0) {
+          // Multi-session registration: register for each session atomically
+          for (const sessionId of sessionIds) {
+            const { error: registrationError } = await supabaseAdmin
+              .rpc('create_paid_registration', {
+                p_event_id: eventId,
+                p_user_id: userId,
+                p_session_id: sessionId,
+              });
 
-        if (registrationError) {
-          console.error('Error creating registration via RPC:', registrationError);
-          // Return 409 so PayHere knows there's an issue (capacity full)
-          return new Response('CAPACITY_FULL', { status: 409 });
+            if (registrationError) {
+              console.error(`Error registering for session ${sessionId}:`, registrationError);
+              // Continue with other sessions — don't fail the entire batch
+            } else {
+              console.log(`Session registration created: ${sessionId}`);
+            }
+          }
         } else {
-          console.log('Event registration created via RPC for event:', eventId);
+          // Single (non-session) registration
+          const { error: registrationError } = await supabaseAdmin
+            .rpc('create_paid_registration', {
+              p_event_id: eventId,
+              p_user_id: userId,
+            });
+
+          if (registrationError) {
+            console.error('Error creating registration via RPC:', registrationError);
+            return new Response('CAPACITY_FULL', { status: 409 });
+          } else {
+            console.log('Event registration created via RPC for event:', eventId);
+          }
         }
       }
 
-      // ─── SUCCESS: Update donation record ───
+      // ─── SUCCESS: Donation ───
       if (paymentType === 'donation' && donationId) {
         const { error: donationError } = await supabaseAdmin
           .from('donations')
@@ -177,6 +216,114 @@ Deno.serve(async (req) => {
         } else {
           console.log('Donation marked as completed:', donationId);
         }
+      }
+
+      // ─── SUCCESS: Subscription ───
+      if (paymentType === 'subscription' && subscriptionId) {
+        const nextChargeDate = new Date();
+        nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
+
+        const { error: subError } = await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            status: 'active',
+            gateway_subscription_id: recurringId || paymentId,
+            next_charge_date: nextChargeDate.toISOString(),
+            retry_count: 0,
+            grace_until: null,
+          })
+          .eq('id', subscriptionId);
+
+        if (subError) {
+          console.error('Error activating subscription:', subError);
+        } else {
+          console.log('Subscription activated:', subscriptionId);
+        }
+
+        // Log successful subscription attempt
+        await supabaseAdmin
+          .from('subscription_attempts')
+          .insert({
+            subscription_id: subscriptionId,
+            amount: parseFloat(payhereAmount),
+            status: 'success',
+            gateway_tx_id: paymentId,
+          });
+      }
+    }
+
+    // ─── Handle subscription renewal failures ───
+    if (attemptStatus === 'failed' && paymentType === 'subscription' && subscriptionId) {
+      // Increment retry count, apply grace period logic
+      const { data: sub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('retry_count, status')
+        .eq('id', subscriptionId)
+        .single();
+
+      if (sub) {
+        const newRetryCount = (sub.retry_count || 0) + 1;
+        const graceUntil = new Date();
+        graceUntil.setDate(graceUntil.getDate() + 7); // 7-day grace period
+
+        if (newRetryCount >= 3) {
+          // Max retries reached — suspend subscription
+          await supabaseAdmin
+            .from('subscriptions')
+            .update({
+              status: 'suspended',
+              retry_count: newRetryCount,
+            })
+            .eq('id', subscriptionId);
+          console.log('Subscription suspended after max retries:', subscriptionId);
+        } else {
+          // Still within retry window — update retry count and set grace
+          const nextRetryDate = new Date();
+          nextRetryDate.setDate(nextRetryDate.getDate() + 3); // retry every 3 days
+
+          await supabaseAdmin
+            .from('subscriptions')
+            .update({
+              retry_count: newRetryCount,
+              next_charge_date: nextRetryDate.toISOString(),
+              grace_until: graceUntil.toISOString(),
+            })
+            .eq('id', subscriptionId);
+          console.log(`Subscription retry ${newRetryCount}/3:`, subscriptionId);
+        }
+
+        // Log failed subscription attempt
+        await supabaseAdmin
+          .from('subscription_attempts')
+          .insert({
+            subscription_id: subscriptionId,
+            amount: parseFloat(payhereAmount),
+            status: 'failed',
+            gateway_tx_id: paymentId,
+            failure_reason: statusMessage || 'Payment failed',
+          });
+      }
+    }
+
+    // ─── Handle chargebacks ───
+    if (attemptStatus === 'chargeback') {
+      // Revoke event registrations
+      if (paymentType === 'event_registration' && eventId && userId) {
+        await supabaseAdmin
+          .from('event_registrations')
+          .update({ status: 'cancelled' })
+          .eq('event_id', eventId)
+          .eq('user_id', userId);
+        console.log('Registrations revoked due to chargeback');
+      }
+
+      // Suspend subscriptions
+      if (paymentType === 'subscription' && subscriptionId) {
+        await supabaseAdmin
+          .from('subscriptions')
+          .update({ status: 'cancelled' })
+          .eq('id', subscriptionId);
+        console.log('Subscription cancelled due to chargeback');
       }
     }
 

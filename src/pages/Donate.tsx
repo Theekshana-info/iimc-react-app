@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useNavigate, Link } from 'react-router-dom';
-import { Heart, CreditCard, Building2 } from 'lucide-react';
+import { Heart, CreditCard, Building2, RefreshCw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import { cn } from '@/lib/utils';
 
 export default function Donate() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function Donate() {
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
   const [donorMessage, setDonorMessage] = useState('');
+  const [donationType, setDonationType] = useState<'one-time' | 'monthly'>('one-time');
 
   const predefinedAmounts = [500, 1000, 2500, 5000];
 
@@ -42,35 +44,87 @@ export default function Donate() {
       toast.error('Please enter a valid donation amount');
       return;
     }
+
+    // Monthly donations require login
+    if (donationType === 'monthly') {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) {
+          toast.info('Please sign in to set up a monthly donation');
+          navigate('/login', { state: { from: { pathname: '/donate' } } });
+          return;
+        }
+        setShowDonorForm(true);
+      });
+      return;
+    }
+
     setShowDonorForm(true);
   };
 
   const handleProceedToPayment = async () => {
     const donationAmount = amount || customAmount;
     try {
-      const donationId = crypto.randomUUID();
-      const { error: donationError } = await supabase
-        .from('donations')
-        .insert({
-          id: donationId,
-          amount: parseFloat(donationAmount),
-          donor_name: donorName || null,
-          donor_email: donorEmail || null,
-          donor_message: donorMessage || null,
-          status: 'pending',
+      if (donationType === 'monthly') {
+        // Create subscription record, then go to payment
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error('Please sign in to set up a monthly donation');
+          navigate('/login', { state: { from: { pathname: '/donate' } } });
+          return;
+        }
+
+        const subscriptionId = crypto.randomUUID();
+        const { error: subError } = await supabase
+          .from('subscriptions')
+          .insert({
+            id: subscriptionId,
+            user_id: user.id,
+            subscription_type: 'donation',
+            price: parseFloat(donationAmount),
+            amount: parseFloat(donationAmount),
+            status: 'pending',
+            billing_cycle: 'monthly',
+            gateway: 'payhere',
+            donor_message: donorMessage || null,
+          });
+
+        if (subError) throw subError;
+
+        navigate('/payment', {
+          state: {
+            amount: parseFloat(donationAmount),
+            type: 'subscription',
+            description: 'Monthly Donation to IIMC',
+            subscriptionId,
+            isAnonymous: false,
+          },
         });
+      } else {
+        // One-time donation (existing flow)
+        const donationId = crypto.randomUUID();
+        const { error: donationError } = await supabase
+          .from('donations')
+          .insert({
+            id: donationId,
+            amount: parseFloat(donationAmount),
+            donor_name: donorName || null,
+            donor_email: donorEmail || null,
+            donor_message: donorMessage || null,
+            status: 'pending',
+          });
 
-      if (donationError) throw donationError;
+        if (donationError) throw donationError;
 
-      navigate('/payment', {
-        state: {
-          amount: parseFloat(donationAmount),
-          type: 'donation',
-          description: 'Donation to IIMC',
-          donationId: donationId,
-          isAnonymous: true,
-        },
-      });
+        navigate('/payment', {
+          state: {
+            amount: parseFloat(donationAmount),
+            type: 'donation',
+            description: 'Donation to IIMC',
+            donationId: donationId,
+            isAnonymous: true,
+          },
+        });
+      }
     } catch (error) {
       console.error('Error creating donation:', error);
       toast.error('Failed to process donation');
@@ -84,28 +138,44 @@ export default function Donate() {
           <ScrollReveal>
             <Card className="shadow-glow">
               <CardHeader>
-                <CardTitle className="text-2xl">Share Your Story (Optional)</CardTitle>
+                <CardTitle className="text-2xl">
+                  {donationType === 'monthly' ? 'Set Up Monthly Donation' : 'Share Your Story (Optional)'}
+                </CardTitle>
                 <CardDescription>
-                  Let us know who you are and why you're supporting us. All fields are optional.
+                  {donationType === 'monthly'
+                    ? 'Your monthly support makes a lasting impact. Review your details below.'
+                    : 'Let us know who you are and why you\'re supporting us. All fields are optional.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 flex items-center justify-between">
                   <p className="text-lg font-semibold text-primary">
-                    Donation Amount: LKR {amount || customAmount}
+                    {donationType === 'monthly' ? 'Monthly' : ''} Donation: LKR {amount || customAmount}
                   </p>
+                  {donationType === 'monthly' && (
+                    <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full flex items-center gap-1">
+                      <RefreshCw className="h-3 w-3" />
+                      Recurring
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-4">
+                  {donationType === 'one-time' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="donor-name">Your Name</Label>
+                        <Input id="donor-name" placeholder="Enter your name (optional)" value={donorName} onChange={(e) => setDonorName(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="donor-email">Your Email</Label>
+                        <Input id="donor-email" type="email" placeholder="Enter your email (optional)" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} />
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-2">
-                    <Label htmlFor="donor-name">Your Name</Label>
-                    <Input id="donor-name" placeholder="Enter your name (optional)" value={donorName} onChange={(e) => setDonorName(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="donor-email">Your Email</Label>
-                    <Input id="donor-email" type="email" placeholder="Enter your email (optional)" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="donor-message">Your Message</Label>
+                    <Label htmlFor="donor-message">
+                      {donationType === 'monthly' ? 'Message (Optional)' : 'Your Message'}
+                    </Label>
                     <Textarea id="donor-message" placeholder="Share why you're supporting us (optional)" value={donorMessage} onChange={(e) => setDonorMessage(e.target.value)} rows={4} className="resize-none" />
                     <p className="text-xs text-muted-foreground">Your message will help us understand our community better.</p>
                   </div>
@@ -116,12 +186,17 @@ export default function Donate() {
                     Terms & Conditions
                   </Link>
                   . Payments are processed securely via PayHere.
+                  {donationType === 'monthly' && ' You can cancel your subscription anytime from your profile.'}
                 </p>
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => setShowDonorForm(false)} className="flex-1">Back</Button>
-                  <Button onClick={handleProceedToPayment} className="flex-1" size="lg">Continue to Payment</Button>
+                  <Button onClick={handleProceedToPayment} className="flex-1" size="lg">
+                    {donationType === 'monthly' ? 'Start Monthly Donation' : 'Continue to Payment'}
+                  </Button>
                 </div>
-                <p className="text-center text-sm text-muted-foreground">You can skip this step and proceed directly to payment if you prefer to remain anonymous.</p>
+                {donationType === 'one-time' && (
+                  <p className="text-center text-sm text-muted-foreground">You can skip this step and proceed directly to payment if you prefer to remain anonymous.</p>
+                )}
               </CardContent>
             </Card>
           </ScrollReveal>
@@ -154,6 +229,40 @@ export default function Donate() {
                 <CardDescription>Donate securely via PayHere payment gateway</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Donation type toggle */}
+                <div className="flex rounded-xl bg-muted/50 p-1 border border-border/50">
+                  <button
+                    onClick={() => setDonationType('one-time')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200',
+                      donationType === 'one-time'
+                        ? 'bg-background shadow-sm text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    One-time
+                  </button>
+                  <button
+                    onClick={() => setDonationType('monthly')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200',
+                      donationType === 'monthly'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Monthly
+                  </button>
+                </div>
+
+                {donationType === 'monthly' && (
+                  <div className="text-xs text-center text-primary/80 bg-primary/5 rounded-lg py-2 px-3 border border-primary/10">
+                    Your monthly donation provides sustainable support. Cancel anytime from your profile.
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                   {predefinedAmounts.map((value) => (
                     <Button
@@ -162,7 +271,7 @@ export default function Donate() {
                       onClick={() => { setAmount(value.toString()); setCustomAmount(''); }}
                       className="h-16 text-lg"
                     >
-                      LKR {value}
+                      LKR {value.toLocaleString()}
                     </Button>
                   ))}
                 </div>
@@ -181,7 +290,9 @@ export default function Donate() {
                     }}
                   />
                 </div>
-                <Button className="w-full" size="lg" onClick={handleDonate}>Continue</Button>
+                <Button className="w-full" size="lg" onClick={handleDonate}>
+                  {donationType === 'monthly' ? 'Set Up Monthly Donation' : 'Continue'}
+                </Button>
                 <div className="text-center text-xs text-muted-foreground">
                   <p>Secure payment powered by PayHere</p>
                 </div>

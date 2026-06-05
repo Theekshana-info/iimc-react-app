@@ -1,4 +1,6 @@
-// HIGH-7: JWT verification added — users can only query their own payment status
+// Phase 2: Enhanced verify_payhere_payment
+// Supports: event_registration (single + multi-session), donation, subscription
+// HIGH-7: JWT verification — users can only query their own payment status
 // MEDIUM-6: CORS restricted
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -30,10 +32,10 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { eventId, userId, donationId, paymentType } = body;
+    const { eventId, userId, donationId, paymentType, sessionIds, subscriptionId } = body;
 
     // Enforce: authenticated user can only query their own status
-    if (paymentType === 'event_registration') {
+    if (paymentType === 'event_registration' || paymentType === 'subscription') {
       if (!authenticatedUserId) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -50,18 +52,38 @@ Deno.serve(async (req) => {
 
     // ── Verify event registration payment ──
     if (paymentType === 'event_registration' && eventId && authenticatedUserId) {
-      const { data: reg } = await supabaseAdmin
-        .from('event_registrations')
-        .select('status')
-        .eq('event_id', eventId)
-        .eq('user_id', authenticatedUserId)
-        .eq('status', 'paid')
-        .maybeSingle();
+      // Multi-session verification
+      if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
+        const { data: regs } = await supabaseAdmin
+          .from('event_registrations')
+          .select('session_id')
+          .eq('event_id', eventId)
+          .eq('user_id', authenticatedUserId)
+          .eq('status', 'paid')
+          .in('session_id', sessionIds);
 
-      if (reg) {
-        return new Response(JSON.stringify({ verified: true, status: 'success' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        // All requested sessions must be registered
+        if (regs && regs.length === sessionIds.length) {
+          return new Response(JSON.stringify({ verified: true, status: 'success' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } else {
+        // Single (non-session) registration verification
+        const { data: reg } = await supabaseAdmin
+          .from('event_registrations')
+          .select('status')
+          .eq('event_id', eventId)
+          .eq('user_id', authenticatedUserId)
+          .eq('status', 'paid')
+          .is('session_id', null)
+          .maybeSingle();
+
+        if (reg) {
+          return new Response(JSON.stringify({ verified: true, status: 'success' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
     }
 
@@ -76,6 +98,23 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (payment) {
+        return new Response(JSON.stringify({ verified: true, status: 'success' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // ── Verify subscription payment ──
+    if (paymentType === 'subscription' && subscriptionId && authenticatedUserId) {
+      const { data: sub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('status')
+        .eq('id', subscriptionId)
+        .eq('user_id', authenticatedUserId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (sub) {
         return new Response(JSON.stringify({ verified: true, status: 'success' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

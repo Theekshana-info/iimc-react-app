@@ -14,17 +14,23 @@ import { HomeMessagesManager } from '@/components/admin/HomeMessagesManager';
 import { SocialLinksManager } from '@/components/admin/SocialLinksManager';
 import { ActivitiesManager } from '@/components/admin/ActivitiesManager';
 import { PaymentAttemptsManager } from '@/components/admin/PaymentAttemptsManager';
-import { Calendar, BookOpen, Users, MessageSquare, Heart, GraduationCap, Building2, FileText, ChevronRight } from 'lucide-react';
+import { SessionScheduler } from '@/components/admin/SessionScheduler';
+import { AttendanceManager } from '@/components/admin/AttendanceManager';
+import { SubscriptionManager } from '@/components/admin/SubscriptionManager';
+import { Calendar, BookOpen, Users, MessageSquare, Heart, GraduationCap, Building2, FileText, ChevronRight, CalendarDays, ClipboardCheck, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 const adminTabs = [
   { value: 'events', label: 'Events', icon: Calendar },
+  { value: 'sessions', label: 'Sessions', icon: CalendarDays },
+  { value: 'attendance', label: 'Attendance', icon: ClipboardCheck },
   { value: 'blog', label: 'Blog', icon: BookOpen },
   { value: 'teachers', label: 'Teachers', icon: GraduationCap },
   { value: 'users', label: 'Users', icon: Users },
   { value: 'messages', label: 'Messages', icon: MessageSquare },
   { value: 'donations', label: 'Donations & Payments', icon: Heart },
+  { value: 'subscriptions', label: 'Subscriptions', icon: RefreshCw },
   { value: 'bank-details', label: 'Banks', icon: Building2 },
   { value: 'activities', label: 'Activities', icon: BookOpen },
   { value: 'home-messages', label: 'Home Msg', icon: MessageSquare },
@@ -82,11 +88,14 @@ export default function Admin() {
   const renderContent = () => {
     const contentMap: Record<string, { title: string; desc: string; component: React.ReactNode }> = {
       events: { title: 'Events Management', desc: 'Create, edit, and manage meditation events', component: <EventsManager /> },
+      sessions: { title: 'Session Scheduler', desc: 'Generate and manage sessions for recurring events', component: <SessionScheduler /> },
+      attendance: { title: 'Attendance Desk', desc: 'Mark attendance for event sessions', component: <AttendanceManager /> },
       blog: { title: 'Blog Management', desc: 'Publish and manage insightful blog posts', component: <BlogManager /> },
       teachers: { title: 'Teachers Management', desc: 'Maintain the list of center teachers and guides', component: <TeachersManager /> },
       users: { title: 'Users Management', desc: 'View registered users and assign roles', component: <UsersManager /> },
       messages: { title: 'Messages', desc: 'Review contact form submissions from visitors', component: <MessagesManager /> },
       donations: { title: 'Donations & Payments', desc: 'Track verified payments and donations', component: <DonationsManager /> },
+      subscriptions: { title: 'Subscriptions', desc: 'Manage recurring donations and billing', component: <SubscriptionManager /> },
       'bank-details': { title: 'Bank Details', desc: 'Manage bank accounts shown for direct transfers', component: <BankDetailsManager /> },
       activities: { title: 'Activities Manager', desc: 'Create and update ongoing activities', component: <ActivitiesManager /> },
       'home-messages': { title: 'Home Messages', desc: 'Set announcements for the homepage', component: <HomeMessagesManager /> },

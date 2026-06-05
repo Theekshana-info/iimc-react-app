@@ -15,6 +15,8 @@ export default function PaymentResult() {
   const paymentType = location.state?.paymentType;
   const eventId = location.state?.eventId;
   const donationId = location.state?.donationId;
+  const subscriptionId = location.state?.subscriptionId;
+  const sessionIds = location.state?.sessionIds;
   const paymentInitiatedAt = location.state?.paymentInitiatedAt;
   const attemptOrderId = location.state?.attemptOrderId;
 
@@ -59,6 +61,8 @@ export default function PaymentResult() {
             eventId: paymentType === 'event_registration' ? eventId : undefined,
             userId: (await supabase.auth.getUser()).data.user?.id,
             donationId: paymentType === 'donation' ? donationId : undefined,
+            subscriptionId: paymentType === 'subscription' ? subscriptionId : undefined,
+            sessionIds: paymentType === 'event_registration' && sessionIds ? sessionIds : undefined,
           },
         });
 
@@ -73,11 +77,18 @@ export default function PaymentResult() {
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [isPollingInitial, status, paymentType, eventId, donationId]);
+  }, [isPollingInitial, status, paymentType, eventId, donationId, subscriptionId, sessionIds]);
 
   const isSuccess = status === 'success';
   const isPolling = status === 'polling';
   const isFailed = status === 'failed';
+
+  const getSuccessMessage = () => {
+    if (paymentType === 'subscription') {
+      return 'Your monthly donation has been set up successfully. Thank you for your ongoing support!';
+    }
+    return 'Your payment has been verified and processed successfully.';
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 gradient-hero">
@@ -99,14 +110,16 @@ export default function PaymentResult() {
             {isPolling
               ? 'Verifying Payment...'
               : isSuccess
-                ? 'Payment Successful!'
+                ? paymentType === 'subscription'
+                  ? 'Subscription Active!'
+                  : 'Payment Successful!'
                 : 'Payment Not Confirmed'}
           </CardTitle>
           <CardDescription>
             {isPolling
               ? 'We are confirming your payment with PayHere. This may take a few moments.'
               : isSuccess
-                ? 'Your payment has been verified and processed successfully.'
+                ? getSuccessMessage()
                 : 'Your payment could not be confirmed. If you completed payment, it may take a few minutes to process.'}
           </CardDescription>
         </CardHeader>
@@ -120,7 +133,9 @@ export default function PaymentResult() {
 
           {isSuccess && (
             <p className="text-sm text-muted-foreground">
-              You will receive a confirmation email shortly.
+              {paymentType === 'subscription'
+                ? 'You can manage your subscription from your profile page.'
+                : 'You will receive a confirmation email shortly.'}
             </p>
           )}
 
@@ -144,6 +159,13 @@ export default function PaymentResult() {
                 onClick={() => navigate('/events')}
               >
                 View Events
+              </Button>
+            ) : paymentType === 'subscription' ? (
+              <Button
+                className="flex-1"
+                onClick={() => navigate('/profile')}
+              >
+                My Subscriptions
               </Button>
             ) : (
               <Button

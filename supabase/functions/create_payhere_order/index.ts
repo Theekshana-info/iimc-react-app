@@ -1,4 +1,6 @@
-// HIGH-1: Secure create_payhere_order — validates JWT, looks up price server-side
+// Phase 2: Enhanced create_payhere_order
+// Supports: event_registration (single + multi-session), donation, subscription
+// HIGH-1: Secure — validates JWT, resolves price server-side
 // MEDIUM-6: CORS restricted to ALLOWED_ORIGIN env var
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
@@ -17,7 +19,7 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json();
-    const { type, eventId, amount, orderId } = body;
+    const { type, eventId, sessionIds, amount, orderId, subscriptionId } = body;
 
     let resolvedAmount: number;
     let itemName: string;
@@ -31,22 +33,19 @@ Deno.serve(async (req) => {
       if (!error && user) {
         userId = user.id;
       } else if (type !== 'donation') {
-        // Non-donation payments REQUIRE valid auth
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
         });
       }
-      // For donations: auth failure is OK — continue as anonymous
     } else if (type !== 'donation') {
-      // Non-donation payments MUST have auth header
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
 
-    // ─── Resolve amount SERVER-SIDE ───
+    // ─── Resolve amount SERVER-SIDE based on payment type ───
     if (type === 'event_registration') {
       if (!eventId) throw new Error('eventId is required for event registration');
       const { data: event, error } = await supabaseAdmin
@@ -56,8 +55,40 @@ Deno.serve(async (req) => {
         .single();
       if (error || !event) throw new Error('Event not found');
       if (!event.price || event.price <= 0) throw new Error('Event is free — use free registration flow');
-      resolvedAmount = event.price;
-      itemName = `Registration: ${event.title}`;
+
+      // Multi-session checkout: price × session count
+      if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
+        // Validate all session IDs belong to this event and are active
+        const { data: sessions, error: sessError } = await supabaseAdmin
+          .from('event_sessions')
+          .select('id, status')
+          .eq('event_id', eventId)
+          .in('id', sessionIds);
+
+        if (sessError) throw new Error('Failed to validate sessions');
+        if (!sessions || sessions.length !== sessionIds.length) {
+          throw new Error('One or more session IDs are invalid');
+        }
+
+        const inactiveSessions = sessions.filter(s => s.status !== 'active');
+        if (inactiveSessions.length > 0) {
+          throw new Error('One or more selected sessions are not active');
+        }
+
+        resolvedAmount = event.price * sessionIds.length;
+        itemName = `Registration: ${event.title} (${sessionIds.length} session${sessionIds.length > 1 ? 's' : ''})`;
+      } else {
+        // Single registration (no session)
+        resolvedAmount = event.price;
+        itemName = `Registration: ${event.title}`;
+      }
+    } else if (type === 'subscription') {
+      // Recurring donation subscription
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        throw new Error('Invalid subscription amount');
+      }
+      resolvedAmount = parseFloat(amount);
+      itemName = 'Monthly Donation to IIMC';
     } else if (type === 'donation') {
       if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
         throw new Error('Invalid donation amount');
@@ -91,18 +122,27 @@ Deno.serve(async (req) => {
     const notifyUrl = Deno.env.get('PAYHERE_NOTIFY_URL')
       || `${supabaseUrl}/functions/v1/payhere_webhook_handler`;
 
+    // Build response — include recurrence params for subscriptions
+    const responsePayload: Record<string, unknown> = {
+      merchant_id: merchantId,
+      order_id: orderId,
+      amount: amountFormatted,
+      currency,
+      hash,
+      items: itemName,
+      notify_url: notifyUrl,
+      resolved_amount: resolvedAmount,
+      user_id: userId,
+    };
+
+    // For subscription payments, include PayHere recurrence parameters
+    if (type === 'subscription') {
+      responsePayload.recurrence = '1 Month';
+      responsePayload.duration = 'Forever';
+    }
+
     return new Response(
-      JSON.stringify({
-        merchant_id: merchantId,
-        order_id: orderId,
-        amount: amountFormatted,
-        currency,
-        hash,
-        items: itemName,
-        notify_url: notifyUrl,
-        resolved_amount: resolvedAmount,
-        user_id: userId,
-      }),
+      JSON.stringify(responsePayload),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {

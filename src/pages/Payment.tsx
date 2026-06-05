@@ -14,7 +14,10 @@ export default function Payment() {
   const [user, setUser] = useState<any>(null);
   const [termsAccepted, setTermsAccepted] = useState(true);
 
-  const { amount, type, eventId, description, isAnonymous, donationId } = location.state || {};
+  const {
+    amount, type, eventId, description, isAnonymous, donationId,
+    sessionIds, subscriptionId
+  } = location.state || {};
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -94,7 +97,6 @@ export default function Payment() {
       }
 
       // Call edge function to create PayHere order (generates hash server-side)
-      // Send ALL fields for backward compat with old deployed function + new fields for when it's redeployed
       const notifyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payhere_webhook_handler`;
       const { data, error } = await supabase.functions.invoke('create_payhere_order', {
         body: {
@@ -102,9 +104,10 @@ export default function Payment() {
           orderId,
           itemName: description || type,
           notifyUrl,
-          // New fields for when edge function is redeployed (HIGH-1)
           type,
           eventId: type === 'event_registration' ? eventId : undefined,
+          sessionIds: type === 'event_registration' && sessionIds ? sessionIds : undefined,
+          subscriptionId: type === 'subscription' ? subscriptionId : undefined,
         },
       });
 
@@ -121,7 +124,8 @@ export default function Payment() {
         console.log('Payment completed. OrderID:', completedOrderId);
         navigate('/payment-result', {
           state: {
-            paymentType: type, eventId, donationId,
+            paymentType: type, eventId, donationId, subscriptionId,
+            sessionIds,
             isPolling: true, paymentInitiatedAt,
             attemptOrderId: orderId, attemptUserId: actualUserId,
           },
@@ -159,9 +163,15 @@ export default function Payment() {
       // Build custom_1 for webhook
       let custom1 = type;
       if (type === 'event_registration' && eventId) {
-        custom1 = `event_registration:${eventId}`;
+        if (sessionIds && sessionIds.length > 0) {
+          custom1 = `event_sessions:${eventId}:${sessionIds.join(',')}`;
+        } else {
+          custom1 = `event_registration:${eventId}`;
+        }
       } else if (type === 'donation' && donationId) {
         custom1 = `donation:${donationId}`;
+      } else if (type === 'subscription' && subscriptionId) {
+        custom1 = `subscription:${subscriptionId}`;
       }
 
       const items = data.items || description || type || 'Payment';
@@ -179,7 +189,7 @@ export default function Payment() {
       }
 
       // Build the payment object for the JS SDK
-      const payment = {
+      const payment: Record<string, any> = {
         // CRITICAL-2: Environment-controlled sandbox mode
         sandbox: import.meta.env.VITE_PAYHERE_SANDBOX === 'true',
         merchant_id: data.merchant_id,
@@ -202,6 +212,12 @@ export default function Payment() {
         custom_2: actualUserId || '',
       };
 
+      // Add recurrence params for subscriptions
+      if (type === 'subscription' && data.recurrence) {
+        payment.recurrence = data.recurrence;
+        payment.duration = data.duration;
+      }
+
       payhere.startPayment(payment);
 
     } catch (error) {
@@ -222,19 +238,33 @@ export default function Payment() {
         <CardHeader>
           <CardTitle>Complete Payment</CardTitle>
           <CardDescription>
-            Pay securely via PayHere — the payment form will open as a popup on this page
+            {type === 'subscription'
+              ? 'Set up your monthly recurring donation via PayHere'
+              : 'Pay securely via PayHere — the payment form will open as a popup on this page'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="bg-muted p-4 rounded-lg space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Description:</span>
-              <span className="font-medium">{description || type}</span>
+              <span className="font-medium text-right max-w-[200px] truncate">{description || type}</span>
             </div>
+            {sessionIds && sessionIds.length > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sessions:</span>
+                <span className="font-medium">{sessionIds.length} session{sessionIds.length > 1 ? 's' : ''}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Amount:</span>
-              <span className="text-2xl font-bold">LKR {amount}</span>
+              <span className="text-2xl font-bold">LKR {Number(amount).toLocaleString()}</span>
             </div>
+            {type === 'subscription' && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Billing:</span>
+                <span className="font-medium text-primary">Monthly Recurring</span>
+              </div>
+            )}
           </div>
 
           {/* HIGH-9: Email verification gate */}
@@ -275,7 +305,9 @@ export default function Payment() {
               ? 'Verify Email to Pay'
               : loading
                 ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
-                : 'Pay with PayHere'}
+                : type === 'subscription'
+                  ? 'Set Up Monthly Donation'
+                  : 'Pay with PayHere'}
           </Button>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

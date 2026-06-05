@@ -218,6 +218,8 @@ export type Database = {
           event_id: string
           id: string
           registered_at: string | null
+          session_id: string | null
+          payment_id: string | null
           status: string | null
           user_id: string
         }
@@ -225,6 +227,8 @@ export type Database = {
           event_id: string
           id?: string
           registered_at?: string | null
+          session_id?: string | null
+          payment_id?: string | null
           status?: string | null
           user_id: string
         }
@@ -232,6 +236,8 @@ export type Database = {
           event_id?: string
           id?: string
           registered_at?: string | null
+          session_id?: string | null
+          payment_id?: string | null
           status?: string | null
           user_id?: string
         }
@@ -248,6 +254,68 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_sessions: {
+        Row: {
+          id: string
+          event_id: string
+          session_date: string
+          session_time: string | null
+          capacity_override: number | null
+          status: string
+          replaced_by_session_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          session_date: string
+          session_time?: string | null
+          capacity_override?: number | null
+          status?: string
+          replaced_by_session_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          session_date?: string
+          session_time?: string | null
+          capacity_override?: number | null
+          status?: string
+          replaced_by_session_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_sessions_replaced_by_fkey"
+            columns: ["replaced_by_session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -653,6 +721,93 @@ export type Database = {
         }
         Relationships: []
       }
+      session_attendance: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string
+          status: string
+          marked_at: string
+          marked_by: string | null
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id: string
+          status?: string
+          marked_at?: string
+          marked_by?: string | null
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string
+          status?: string
+          marked_at?: string
+          marked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "event_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_attempts: {
+        Row: {
+          id: string
+          subscription_id: string
+          amount: number
+          status: string
+          gateway_tx_id: string | null
+          failure_reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          subscription_id: string
+          amount: number
+          status?: string
+          gateway_tx_id?: string | null
+          failure_reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          subscription_id?: string
+          amount?: number
+          status?: string
+          gateway_tx_id?: string | null
+          failure_reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_attempts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string | null
@@ -663,6 +818,15 @@ export type Database = {
           status: string | null
           subscription_type: string
           user_id: string
+          gateway: string | null
+          gateway_subscription_id: string | null
+          billing_cycle: string | null
+          amount: number | null
+          next_charge_date: string | null
+          cancelled_at: string | null
+          retry_count: number
+          grace_until: string | null
+          donor_message: string | null
         }
         Insert: {
           created_at?: string | null
@@ -673,6 +837,15 @@ export type Database = {
           status?: string | null
           subscription_type: string
           user_id: string
+          gateway?: string | null
+          gateway_subscription_id?: string | null
+          billing_cycle?: string | null
+          amount?: number | null
+          next_charge_date?: string | null
+          cancelled_at?: string | null
+          retry_count?: number
+          grace_until?: string | null
+          donor_message?: string | null
         }
         Update: {
           created_at?: string | null
@@ -683,6 +856,15 @@ export type Database = {
           status?: string | null
           subscription_type?: string
           user_id?: string
+          gateway?: string | null
+          gateway_subscription_id?: string | null
+          billing_cycle?: string | null
+          amount?: number | null
+          next_charge_date?: string | null
+          cancelled_at?: string | null
+          retry_count?: number
+          grace_until?: string | null
+          donor_message?: string | null
         }
         Relationships: [
           {
@@ -764,6 +946,18 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      generate_event_sessions: {
+        Args: { p_event_id: string; p_start_date: string; p_end_date: string }
+        Returns: number
+      }
+      create_paid_registration: {
+        Args: { p_event_id: string; p_user_id: string; p_session_id?: string }
+        Returns: undefined
+      }
+      register_free_event: {
+        Args: { p_event_id: string; p_session_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "user" | "teacher" | "admin"
