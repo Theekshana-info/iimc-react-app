@@ -58,8 +58,8 @@ export default function EventDetail() {
     },
   });
 
-  const hasSessions = (sessionCount ?? 0) > 0;
   const isRecurring = event?.recurrence_type && event.recurrence_type !== 'none';
+  const hasSessions = isRecurring;
   const isFreeEvent = !event?.price || event.price === 0;
   const isHybridEvent = isFreeEvent; // Free events can have optional donation
 
