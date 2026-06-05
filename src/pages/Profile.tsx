@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar, Heart, Loader2, Pencil, Shield, User, Check, Mail, CreditCard } from 'lucide-react';
@@ -374,8 +375,31 @@ export default function Profile() {
   return (
     <div className="min-h-screen py-20 gradient-hero">
       <div className="container px-4 max-w-4xl space-y-6">
-        <div className="shadow-soft rounded-3xl p-3 bg-card border border-transparent">
-          <div className="flex gap-1 md:gap-4 pb-1 md:pb-0 w-full">
+        {/* Mobile View: Select Dropdown */}
+        <div className="md:hidden">
+          <Select value={activeSection} onValueChange={(value) => setActiveSection(value as SectionKey)}>
+            <SelectTrigger className="w-full h-12 rounded-2xl bg-card border border-border/60 px-4">
+              <SelectValue placeholder="Select Section" />
+            </SelectTrigger>
+            <SelectContent>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SelectItem key={item.key} value={item.key}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span>{item.label}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Desktop View: Horizontal Tab Bar */}
+        <div className="hidden md:block shadow-soft rounded-3xl p-3 bg-card border border-transparent">
+          <div className="flex gap-4 w-full">
             {navItems.map((item) => {
               const isActive = activeSection === item.key;
               const Icon = item.icon;
@@ -384,14 +408,13 @@ export default function Profile() {
                   key={item.key}
                   type="button"
                   onClick={() => setActiveSection(item.key)}
-                  className={
-                    `flex items-center justify-center gap-1 md:gap-2 px-1.5 py-2 md:px-3 md:py-2 rounded-xl text-xs md:text-sm font-medium transition-smooth flex-1 min-w-0 ${isActive
+                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-smooth flex-1 ${
+                    isActive
                       ? 'text-primary bg-primary/10'
                       : 'text-muted-foreground hover:text-primary hover:bg-muted/50'
-                    }`
-                  }
+                  }`}
                 >
-                  <Icon className="h-4 w-4 hidden sm:block" />
+                  <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
                 </button>
               );

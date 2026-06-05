@@ -33,7 +33,7 @@ export function Footer() {
   });
 
   return (
-    <footer className="relative z-10 mt-16 mb-6 mx-4 sm:mx-6 lg:mx-8 neu-raised rounded-3xl">
+    <footer className="relative z-10 mt-16 mb-24 lg:mb-6 mx-4 sm:mx-6 lg:mx-8 neu-raised rounded-3xl">
       <div className="container px-6 py-10 md:py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand Column */}
