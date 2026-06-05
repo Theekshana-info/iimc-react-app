@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import Typewriter from 'typewriter-effect';
@@ -7,31 +8,75 @@ import mobileVideo from '@/assets/mobile-loop.mp4';
 
 export function Hero() {
   const navigate = useNavigate();
+  const [isMobileVideo, setIsMobileVideo] = useState<boolean | null>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
+
+  // Detect which video format to load (mobile vs desktop)
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)');
+    setIsMobileVideo(mql.matches);
+    
+    const listener = (e: MediaQueryListEvent) => {
+      setIsMobileVideo(e.matches);
+    };
+    mql.addEventListener('change', listener);
+    return () => mql.removeEventListener('change', listener);
+  }, []);
+
+  const handleVideoLoad = () => {
+    setVideoLoaded(true);
+  };
+
+  // Safe fallback to auto-dismiss loader if video loading is slow, blocked, or not starting
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setVideoLoaded(true);
+    }, 6000); // 6 seconds safety timeout
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Control overlay fade-out and manage body scrolling
+  useEffect(() => {
+    if (videoLoaded) {
+      const timer = setTimeout(() => {
+        setShowOverlay(false);
+      }, 600); // Wait for exit animation to complete
+      return () => clearTimeout(timer);
+    }
+  }, [videoLoaded]);
+
+  useEffect(() => {
+    if (showOverlay) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showOverlay]);
 
   return (
     <section className="relative h-[100svh] max-h-[900px] min-h-[480px] sm:min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+12px)] lg:pb-20 overflow-hidden -mt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
-        {/* Desktop Video */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover hidden sm:block"
-        >
-          <source src={heroVideo} type="video/mp4" />
-        </video>
-        {/* Mobile Video */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover block sm:hidden"
-        >
-          <source src={mobileVideo} type="video/mp4" />
-        </video>
+        {isMobileVideo !== null && (
+          <video
+            key={isMobileVideo ? 'mobile' : 'desktop'}
+            autoPlay
+            loop
+            muted
+            playsInline
+            onLoadedData={handleVideoLoad}
+            onCanPlay={handleVideoLoad}
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${
+              videoLoaded ? 'blur-0 scale-100' : 'blur-2xl scale-110'
+            }`}
+          >
+            <source src={isMobileVideo ? mobileVideo : heroVideo} type="video/mp4" />
+          </video>
+        )}
 
         {/* Atmospheric Cinematic Dark Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 to-black/70" />
@@ -128,6 +173,80 @@ export function Hero() {
 
       {/* Light blue fade transition at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background via-sky-100/30 dark:via-sky-950/20 to-transparent pointer-events-none" />
+
+      {/* Premium Glassmorphic Loading Overlay */}
+      <AnimatePresence>
+        {showOverlay && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-xl pointer-events-auto"
+          >
+            <div className="relative flex flex-col items-center max-w-md px-6 text-center">
+              {/* Concentric Breathing & Spinning Rings */}
+              <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
+                {/* Outermost pulsing ring */}
+                <motion.div
+                  className="absolute inset-0 rounded-full border-2 border-sky-400/20 shadow-[0_0_20px_rgba(56,189,248,0.15)]"
+                  animate={{
+                    scale: [1, 1.25, 1],
+                    opacity: [0.3, 0.8, 0.3],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+                {/* Middle fast-spinning gradient ring */}
+                <motion.div
+                  className="absolute w-20 h-20 rounded-full border-t-2 border-r-2 border-transparent border-sky-400"
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 1.2,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                />
+                {/* Inner breathing glowing core */}
+                <motion.div
+                  className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 shadow-[0_0_20px_rgba(56,189,248,0.6)]"
+                  animate={{
+                    scale: [0.85, 1.1, 0.85],
+                    opacity: [0.7, 1, 0.7],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </div>
+
+              {/* Glowing IIMC Text */}
+              <h2 className="text-4xl font-extrabold text-sky-200 tracking-[0.2em] uppercase mb-4 font-sans select-none">
+                IIMC
+              </h2>
+              
+              {/* Loading Status Indicator */}
+              <div className="h-8 flex items-center justify-center">
+                <motion.p
+                  className="text-sky-300/90 font-['Cormorant_Garamond',serif] italic text-2xl tracking-wider select-none"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  Loading serenity...
+                </motion.p>
+              </div>
+              
+              <p className="text-xs text-slate-400 mt-8 tracking-[0.15em] uppercase select-none opacity-80">
+                Entering a space of mindfulness
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
