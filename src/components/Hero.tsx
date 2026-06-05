@@ -9,7 +9,7 @@ export function Hero() {
   const navigate = useNavigate();
 
   return (
-    <section className="relative h-[100dvh] max-h-[900px] min-h-[480px] sm:min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+12px)] lg:pb-20 overflow-hidden -mt-24">
+    <section className="relative h-[100svh] max-h-[900px] min-h-[480px] sm:min-h-[600px] flex flex-col items-center justify-between pt-24 pb-[calc(52px+env(safe-area-inset-bottom,0px)+12px)] lg:pb-20 overflow-hidden -mt-24">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         {/* Desktop Video */}
@@ -18,7 +18,7 @@ export function Hero() {
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out hidden sm:block"
+          className="absolute inset-0 w-full h-full object-cover hidden sm:block"
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
@@ -28,7 +28,7 @@ export function Hero() {
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out block sm:hidden"
+          className="absolute inset-0 w-full h-full object-cover block sm:hidden"
         >
           <source src={mobileVideo} type="video/mp4" />
         </video>
