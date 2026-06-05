@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ export default function EventDetail() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const queryClient = useQueryClient();
 
   // Session-based registration state
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
@@ -63,9 +65,9 @@ export default function EventDetail() {
   const isFreeEvent = !event?.price || event.price === 0;
   const isHybridEvent = isFreeEvent; // Free events can have optional donation
 
-  // Only check for PAID registrations — pending/incomplete are invisible to users
-  const { data: existingRegistration } = useQuery({
-    queryKey: ['event-registration', id, user?.id],
+  // Fetch user's registrations for this event
+  const { data: userRegistrations } = useQuery({
+    queryKey: ['event-user-registrations', id, user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -73,13 +75,40 @@ export default function EventDetail() {
         .select('*')
         .eq('event_id', id!)
         .eq('user_id', user.id)
-        .eq('status', 'paid')
-        .maybeSingle();
+        .eq('status', 'paid');
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
+
+  // Fetch active upcoming sessions for this event
+  const { data: upcomingSessions } = useQuery({
+    queryKey: ['event-upcoming-sessions', id],
+    enabled: !!id && !!hasSessions,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('event_sessions')
+        .select('id, session_date, session_time, capacity_override, status')
+        .eq('event_id', id!)
+        .eq('status', 'active')
+        .gte('session_date', new Date().toISOString().split('T')[0])
+        .order('session_date', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const registeredSessionIds = userRegistrations
+    ? userRegistrations.map((r) => r.session_id).filter((sid): sid is string => !!sid)
+    : [];
+
+  const isFullyRegistered = hasSessions
+    ? (upcomingSessions && upcomingSessions.length > 0 && upcomingSessions.every((s) => registeredSessionIds.includes(s.id)))
+    : (userRegistrations && userRegistrations.length > 0);
+
+  const hasSomeRegistrations = hasSessions && registeredSessionIds.length > 0;
 
   // Count only PAID registrations for capacity calculation (non-session events)
   const { data: registrationCount } = useQuery({
@@ -174,6 +203,7 @@ export default function EventDetail() {
   };
 
   const handleFreeRegistration = async () => {
+    setIsRegistering(true);
     try {
       if (hasSessions && selectedSessionIds.length > 0) {
         // Register for each selected session
@@ -190,11 +220,18 @@ export default function EventDetail() {
       }
       toast.success('Successfully registered for event!');
       setShowRegisterDialog(false);
-      window.location.reload();
+      
+      // Invalidate queries to refresh state dynamically
+      queryClient.invalidateQueries({ queryKey: ['event-user-registrations', id] });
+      queryClient.invalidateQueries({ queryKey: ['event-session-count', id] });
+      queryClient.invalidateQueries({ queryKey: ['event-registration-count', id] });
+      queryClient.invalidateQueries({ queryKey: ['event-upcoming-sessions', id] });
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
       }
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -301,23 +338,39 @@ export default function EventDetail() {
               />
             </div>
 
-            {existingRegistration ? (
+            {isFullyRegistered ? (
               <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-center p-4 rounded-lg">
-                <p className="font-semibold">✓ You are registered for this event</p>
-              </div>
-            ) : isFull ? (
-              <div className="bg-destructive/10 border border-destructive/30 text-destructive text-center p-4 rounded-lg">
-                <p className="font-semibold">This event is fully booked</p>
-                <p className="text-sm mt-1">All {event.capacity} spots have been taken.</p>
+                <p className="font-semibold">
+                  {hasSessions
+                    ? '✓ You are registered for all sessions of this event'
+                    : '✓ You are registered for this event'}
+                </p>
               </div>
             ) : (
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={handleRegister}
-              >
-                Register for Event
-              </Button>
+              <div className="space-y-4">
+                {hasSomeRegistrations && (
+                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-center p-4 rounded-lg">
+                    <p className="font-semibold">✓ You are registered for some sessions of this event</p>
+                    <p className="text-sm mt-1">
+                      You are registered for {registeredSessionIds.length} session{registeredSessionIds.length > 1 ? 's' : ''}. Register for more sessions below.
+                    </p>
+                  </div>
+                )}
+                {isFull ? (
+                  <div className="bg-destructive/10 border border-destructive/30 text-destructive text-center p-4 rounded-lg">
+                    <p className="font-semibold">This event is fully booked</p>
+                    <p className="text-sm mt-1">All {event.capacity} spots have been taken.</p>
+                  </div>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={handleRegister}
+                  >
+                    {hasSomeRegistrations ? 'Register for More Sessions' : 'Register for Event'}
+                  </Button>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -364,6 +417,7 @@ export default function EventDetail() {
                     eventCapacity={event.capacity}
                     pricePerSession={event.price ?? 0}
                     onSelectionChange={handleSessionSelectionChange}
+                    registeredSessionIds={registeredSessionIds}
                   />
                 </div>
               )}
@@ -447,13 +501,14 @@ export default function EventDetail() {
               <Button
                 className="flex-1 rounded-2xl py-3 h-auto font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/25"
                 onClick={handleConfirmRegistration}
-                disabled={!canProceed}
+                disabled={!canProceed || isRegistering}
               >
-                {isFreeEvent && optionalDonation === 0
-                  ? 'Register Now'
-                  : isFreeEvent && optionalDonation > 0
-                    ? 'Register & Donate'
-                    : 'Proceed to Pay'}
+                {isRegistering ? 'Registering...' :
+                  isFreeEvent && optionalDonation === 0
+                    ? 'Register Now'
+                    : isFreeEvent && optionalDonation > 0
+                      ? 'Register & Donate'
+                      : 'Proceed to Pay'}
               </Button>
             </div>
           </DialogContent>

@@ -12,6 +12,7 @@ interface SessionDatePickerProps {
   eventCapacity: number | null;
   pricePerSession: number;
   onSelectionChange: (sessionIds: string[], totalPrice: number) => void;
+  registeredSessionIds?: string[];
 }
 
 interface SessionWithCount {
@@ -28,6 +29,7 @@ export function SessionDatePicker({
   eventCapacity,
   pricePerSession,
   onSelectionChange,
+  registeredSessionIds = [],
 }: SessionDatePickerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -87,7 +89,9 @@ export function SessionDatePicker({
     if (!sessions) return;
     const available = sessions.filter((s) => {
       const cap = s.capacity_override ?? eventCapacity;
-      return !cap || s.registered_count < cap;
+      const isFull = cap ? s.registered_count >= cap : false;
+      const isAlreadyRegistered = registeredSessionIds?.includes(s.id);
+      return !isFull && !isAlreadyRegistered;
     });
     const ids = available.map((s) => s.id);
     const newSet = new Set(ids);
@@ -147,20 +151,22 @@ export function SessionDatePicker({
       <div className="grid gap-2 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
         {sessions.map((session) => {
           const capacity = session.capacity_override ?? eventCapacity;
+          const isAlreadyRegistered = registeredSessionIds?.includes(session.id);
           const isFull = capacity ? session.registered_count >= capacity : false;
           const isSelected = selectedIds.has(session.id);
           const spotsLeft = capacity ? capacity - session.registered_count : null;
+          const isDisabled = isFull || isAlreadyRegistered;
 
           return (
             <button
               key={session.id}
-              disabled={isFull}
+              disabled={isDisabled}
               onClick={() => toggleSession(session.id)}
               className={cn(
                 'w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 text-left',
-                isSelected
+                isSelected || isAlreadyRegistered
                   ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-sm'
-                  : isFull
+                  : isDisabled
                     ? 'border-border/30 bg-muted/30 opacity-50 cursor-not-allowed'
                     : 'border-border/50 hover:border-primary/40 hover:bg-muted/30 cursor-pointer'
               )}
@@ -170,12 +176,12 @@ export function SessionDatePicker({
                 <div
                   className={cn(
                     'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0',
-                    isSelected
+                    isSelected || isAlreadyRegistered
                       ? 'bg-primary border-primary'
                       : 'border-muted-foreground/30'
                   )}
                 >
-                  {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                  {(isSelected || isAlreadyRegistered) && <Check className="h-3 w-3 text-primary-foreground" />}
                 </div>
 
                 {/* Date & time */}
@@ -193,7 +199,9 @@ export function SessionDatePicker({
 
               {/* Capacity indicator */}
               <div className="flex items-center gap-1.5 shrink-0">
-                {isFull ? (
+                {isAlreadyRegistered ? (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200">Registered</Badge>
+                ) : isFull ? (
                   <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Full</Badge>
                 ) : spotsLeft !== null ? (
                   <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
