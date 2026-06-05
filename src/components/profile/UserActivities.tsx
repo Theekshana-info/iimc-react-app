@@ -121,7 +121,15 @@ export function UserRegistrations({ userId }: UserActivitiesProps) {
                       <CardTitle className="text-base line-clamp-1">{registration.events?.title || 'Event'}</CardTitle>
                       <CardDescription className="flex items-center gap-1.5 text-xs">
                         <span className="font-medium text-foreground">
-                          {dateVal ? format(new Date(dateVal + 'T00:00:00'), 'EEEE, MMM d, yyyy') : 'Date not set'}
+                          {(() => {
+                            if (!dateVal) return 'Date not set';
+                            try {
+                              const cleanDate = String(dateVal).includes('T') ? String(dateVal) : `${String(dateVal).trim()}T00:00:00`;
+                              return format(new Date(cleanDate), 'EEEE, MMM d, yyyy');
+                            } catch (e) {
+                              return 'Invalid Date';
+                            }
+                          })()}
                         </span>
                         {timeVal && (
                           <>

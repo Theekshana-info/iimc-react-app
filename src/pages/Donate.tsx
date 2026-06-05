@@ -230,36 +230,53 @@ export default function Donate() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Donation type toggle */}
-                <div className="flex rounded-xl bg-muted/50 p-1 border border-border/50">
+                <div className="flex rounded-2xl bg-muted/40 p-1.5 border border-border/30">
                   <button
                     onClick={() => setDonationType('one-time')}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200',
+                      'flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300',
                       donationType === 'one-time'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? '!bg-primary !text-white shadow-md'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                     )}
                   >
-                    <Zap className="h-3.5 w-3.5" />
-                    One-time
+                    <Zap className="h-4 w-4" />
+                    One-time Donation
                   </button>
                   <button
                     onClick={() => setDonationType('monthly')}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all duration-200',
+                      'flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300',
                       donationType === 'monthly'
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? '!bg-primary !text-white shadow-md'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                     )}
                   >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    Monthly
+                    <RefreshCw className={cn("h-4 w-4", donationType === 'monthly' && "animate-spin-slow")} />
+                    Monthly Subscription
                   </button>
                 </div>
 
-                {donationType === 'monthly' && (
-                  <div className="text-xs text-center text-primary/80 bg-primary/5 rounded-lg py-2 px-3 border border-primary/10">
-                    Your monthly donation provides sustainable support. Cancel anytime from your profile.
+                {/* Visual Section Description */}
+                {donationType === 'one-time' ? (
+                  <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-3 animate-fade-in-up">
+                    <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-amber-700 dark:text-amber-400">One-Time Contribution</p>
+                      <p className="text-muted-foreground leading-relaxed">
+                        Your direct support will immediately assist center operations, program funding, and immediate repairs. No recurring billing.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 text-primary-foreground text-xs flex items-start gap-3 animate-fade-in-up">
+                    <RefreshCw className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-spin-slow" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-primary">Monthly Sponsorship</p>
+                      <p className="text-muted-foreground leading-relaxed">
+                        Provide reliable, ongoing support to cover fixed expenses, sustain teachers, and expand programs. Managed easily via your profile.
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -269,7 +286,12 @@ export default function Donate() {
                       key={value}
                       variant={amount === value.toString() ? 'default' : 'outline'}
                       onClick={() => { setAmount(value.toString()); setCustomAmount(''); }}
-                      className="h-16 text-lg"
+                      className={cn(
+                        "h-16 text-lg rounded-2xl transition-all duration-300 font-bold",
+                        amount === value.toString()
+                          ? "!bg-primary !text-white hover:opacity-90 shadow-md border-none"
+                          : "border-border/50 hover:bg-muted/30"
+                      )}
                     >
                       LKR {value.toLocaleString()}
                     </Button>
@@ -290,8 +312,12 @@ export default function Donate() {
                     }}
                   />
                 </div>
-                <Button className="w-full" size="lg" onClick={handleDonate}>
-                  {donationType === 'monthly' ? 'Set Up Monthly Donation' : 'Continue'}
+                <Button 
+                  className="w-full rounded-2xl py-6 h-auto font-bold text-base shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 !bg-primary !text-white hover:opacity-90 border-none"
+                  size="lg"
+                  onClick={handleDonate}
+                >
+                  {donationType === 'monthly' ? 'Set Up Monthly Subscription' : 'Continue to Donation'}
                 </Button>
                 <div className="text-center text-xs text-muted-foreground">
                   <p>Secure payment powered by PayHere</p>

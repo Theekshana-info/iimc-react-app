@@ -11,6 +11,7 @@ import { Calendar, MapPin, Users, DollarSign, ArrowLeft, RefreshCw, Heart, Gift 
 import { toast } from 'sonner';
 import { formatEventScheduleLong } from '@/lib/eventUtils';
 import { SessionDatePicker } from '@/components/SessionDatePicker';
+import { cn } from '@/lib/utils';
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -220,7 +221,7 @@ export default function EventDetail() {
       }
       toast.success('Successfully registered for event!');
       setShowRegisterDialog(false);
-      
+
       // Invalidate queries to refresh state dynamically
       queryClient.invalidateQueries({ queryKey: ['event-user-registrations', id] });
       queryClient.invalidateQueries({ queryKey: ['event-session-count', id] });
@@ -268,112 +269,237 @@ export default function EventDetail() {
     : ((!hasSessions || selectedSessionIds.length > 0) && dialogPrice > 0);
 
   return (
-    <div className="min-h-screen py-20">
-      <div className="container px-4 max-w-4xl">
+    <div className="min-h-screen py-24 relative overflow-hidden bg-background">
+      {/* Ambient decorative blobs */}
+      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-10 animate-pulse" style={{ animationDuration: '8s' }} />
+      <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 animate-pulse" style={{ animationDuration: '12s' }} />
+
+      <div className="container px-4 max-w-6xl relative z-10">
         <Button
           variant="ghost"
           onClick={() => navigate('/events')}
-          className="mb-6"
+          className="mb-8 group rounded-2xl hover:bg-primary/5 transition-all duration-300"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           Back to Events
         </Button>
 
-        <Card className="shadow-glow">
-          {event.image_url && (
-            <img
-              src={event.image_url}
-              alt={event.title}
-              className="w-full h-96 object-cover rounded-t-lg"
-            />
-          )}
-          <CardHeader>
-            <CardTitle className="text-4xl">{event.title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                {event.recurrence_type && event.recurrence_type !== 'none'
-                  ? <RefreshCw className="h-5 w-5 text-primary" />
-                  : <Calendar className="h-5 w-5 text-primary" />
-                }
-                <span>{formatEventScheduleLong(event)}</span>
-              </div>
-              {event.location && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <span>{event.location}</span>
+        {/* Responsive Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* Main Event Details Column (Left side) */}
+          <div className="lg:col-span-2 space-y-8 animate-fade-in-up">
+            
+            {/* Unified Event Details Card */}
+            <Card className="overflow-hidden border-none bg-card/50 backdrop-blur-md rounded-[2.5rem] shadow-glow">
+              
+              {/* Event Hero Image (Blurred background + Sharp centered cover to prevent text banner cropping) */}
+              {event.image_url && (
+                <div className="relative overflow-hidden w-full aspect-video sm:aspect-[21/9] lg:h-[380px] bg-slate-950/10 border-b border-border/10">
+                  {/* Blurred background image */}
+                  <img
+                    src={event.image_url}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
+                  />
+                  {/* Sharp centered image */}
+                  <img
+                    src={event.image_url}
+                    alt={event.title}
+                    className="relative z-10 w-full h-full object-contain mx-auto"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent opacity-20 pointer-events-none" />
                 </div>
               )}
-              {event.capacity && !hasSessions && (
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {registrationCount ?? 0} / {event.capacity} registered
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {Math.max(0, event.capacity - (registrationCount ?? 0))} spots available
-                    </span>
+
+              <div className="p-6 sm:p-8 space-y-8">
+                {/* Event Title */}
+                <div className="space-y-3">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-tight">
+                    {event.title}
+                  </h1>
+                </div>
+
+                {/* Flat Details Badges Grid (Bordered top and bottom) */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-6 border-y border-border/20">
+                  
+                  {/* Schedule */}
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary">
+                      {event.recurrence_type && event.recurrence_type !== 'none'
+                        ? <RefreshCw className="h-6 w-6 animate-spin-slow" />
+                        : <Calendar className="h-6 w-6" />
+                      }
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Schedule</span>
+                      <span className="text-xs font-bold text-foreground mt-0.5 leading-snug">
+                        {formatEventScheduleLong(event)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <MapPin className="h-6 w-6" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Location</span>
+                      <span className="text-xs font-bold text-foreground mt-0.5 leading-snug truncate max-w-[120px]" title={event.location || 'Online'}>
+                        {event.location || 'Online'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Attendance / Capacity */}
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                      <Users className="h-6 w-6" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Capacity</span>
+                      <span className="text-xs font-bold text-foreground mt-0.5 leading-snug">
+                        {event.capacity && !hasSessions 
+                          ? `${registrationCount ?? 0} / ${event.capacity} Filled`
+                          : hasSessions 
+                            ? 'Session Limits'
+                            : 'Open Entry'
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cost */}
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      <DollarSign className="h-6 w-6" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Cost</span>
+                      <span className="text-xs font-bold text-foreground mt-0.5 leading-snug">
+                        {event.price && event.price > 0
+                          ? `LKR ${event.price.toLocaleString()}${hasSessions ? ' / sess' : ''}`
+                          : 'Free'}
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Description */}
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-xl sm:text-2xl font-bold text-foreground">About This Event</h3>
+                  <div
+                    className="text-muted-foreground prose prose-slate dark:prose-invert max-w-none leading-relaxed text-sm md:text-base prose-headings:text-foreground prose-a:text-primary"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description || '') }}
+                  />
+                </div>
+
+              </div>
+            </Card>
+
+          </div>
+
+          {/* Sticky Registration Sidebar (Right side) */}
+          <div className="lg:col-span-1 lg:sticky lg:top-28 space-y-6 animate-fade-in-scale">
+            
+            <Card className="shadow-glow border-none bg-card/65 backdrop-blur-md overflow-hidden rounded-[2rem]">
+              <CardContent className="p-6 space-y-6">
+                
+                {/* Price Display */}
+                <div className="text-center pb-6 border-b border-border/20">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Event Access</span>
+                  <div className="text-3xl font-extrabold text-foreground mt-2 flex items-center justify-center gap-1">
+                    {event.price && event.price > 0 ? (
+                      <>
+                        <span className="text-primary text-2xl font-bold">LKR</span>
+                        <span>{event.price.toLocaleString()}</span>
+                        {hasSessions && <span className="text-sm font-normal text-muted-foreground">/session</span>}
+                      </>
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400">Free Admission</span>
+                    )}
                   </div>
                 </div>
-              )}
-              {event.price !== null && (
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">
-                    {event.price > 0
-                      ? `LKR ${event.price}${hasSessions ? ' / session' : ''}`
-                      : 'Free'}
-                  </span>
-                </div>
-              )}
-            </div>
 
-            <div className="border-t pt-6">
-              <h3 className="text-xl font-semibold mb-4">About This Event</h3>
-              <div
-                className="text-muted-foreground prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description || '') }}
-              />
-            </div>
-
-            {isFullyRegistered ? (
-              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-center p-4 rounded-lg">
-                <p className="font-semibold">
-                  {hasSessions
-                    ? '✓ You are registered for all sessions of this event'
-                    : '✓ You are registered for this event'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {hasSomeRegistrations && (
-                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 text-center p-4 rounded-lg">
-                    <p className="font-semibold">✓ You are registered for some sessions of this event</p>
-                    <p className="text-sm mt-1">
-                      You are registered for {registeredSessionIds.length} session{registeredSessionIds.length > 1 ? 's' : ''}. Register for more sessions below.
-                    </p>
+                {/* Capacity Progress Bar (non-session events) */}
+                {event.capacity && !hasSessions && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-muted-foreground">Availability</span>
+                      <span className="text-primary">{registrationCount ?? 0} / {event.capacity} booked</span>
+                    </div>
+                    <div className="w-full h-3 bg-muted rounded-full overflow-hidden neu-inset">
+                      <div
+                        className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, ((registrationCount ?? 0) / event.capacity) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex justify-between">
+                      <span>{Math.max(0, event.capacity - (registrationCount ?? 0))} spots remaining</span>
+                      <span>{event.capacity} total spots</span>
+                    </div>
                   </div>
                 )}
-                {isFull ? (
-                  <div className="bg-destructive/10 border border-destructive/30 text-destructive text-center p-4 rounded-lg">
-                    <p className="font-semibold">This event is fully booked</p>
-                    <p className="text-sm mt-1">All {event.capacity} spots have been taken.</p>
+
+                {/* Call To Action Button / Status State */}
+                {isFullyRegistered ? (
+                  <div className="bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-300 text-center p-5 rounded-2xl flex flex-col items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-600 dark:text-green-400">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm">You are registered!</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {hasSessions
+                          ? 'You are signed up for all sessions of this event'
+                          : 'You are signed up for this event'}
+                      </p>
+                    </div>
                   </div>
                 ) : (
-                  <Button
-                    size="lg"
-                    className="w-full"
-                    onClick={handleRegister}
-                  >
-                    {hasSomeRegistrations ? 'Register for More Sessions' : 'Register for Event'}
-                  </Button>
+                  <div className="space-y-4">
+                    {hasSomeRegistrations && (
+                      <div className="bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-300 text-center p-4 rounded-2xl">
+                        <p className="text-xs font-semibold">
+                          ✓ Registered for {registeredSessionIds.length} session{registeredSessionIds.length > 1 ? 's' : ''}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Register for remaining sessions below</p>
+                      </div>
+                    )}
+                    
+                    {isFull ? (
+                      <div className="bg-destructive/10 border border-destructive/20 text-destructive text-center p-4 rounded-2xl space-y-1">
+                        <p className="font-bold text-sm">Fully Booked</p>
+                        <p className="text-xs text-muted-foreground">All {event.capacity} spots have been reserved.</p>
+                      </div>
+                    ) : (
+                      <Button
+                        size="lg"
+                        className="w-full rounded-2xl py-6 h-auto font-bold text-base shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 !bg-primary !text-white hover:opacity-90 border-none"
+                        onClick={handleRegister}
+                      >
+                        {hasSomeRegistrations ? 'Register for More Sessions' : 'Register for Event'}
+                      </Button>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+                {/* Additional Info Box */}
+                <div className="text-[11px] text-muted-foreground leading-relaxed text-center bg-muted/40 p-3 rounded-2xl border border-border/20">
+                  <span className="font-semibold text-foreground block mb-0.5">Registration Information</span>
+                  For questions or cancellations, please contact IIMC administration.
+                </div>
+
+              </CardContent>
+            </Card>
+
+          </div>
+
+        </div>
 
         {/* Registration Dialog */}
         <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
@@ -409,9 +535,9 @@ export default function EventDetail() {
                 )}
               </div>
 
-              {/* Session Date Picker (for recurring events with sessions) */}
+              {/* Session Date Picker */}
               {hasSessions && isRecurring && (
-                <div className="p-3 rounded-2xl bg-muted/30 border border-border/30">
+                <div className="p-4 rounded-2xl bg-muted/30 border border-border/30">
                   <SessionDatePicker
                     eventId={id!}
                     eventCapacity={event.capacity}
@@ -456,7 +582,10 @@ export default function EventDetail() {
                           key={amt}
                           variant={optionalDonation === amt ? 'default' : 'outline'}
                           size="sm"
-                          className="flex-1 text-xs h-8"
+                          className={cn(
+                            "flex-1 text-xs h-8",
+                            optionalDonation === amt && "!bg-primary !text-white hover:opacity-90 border-none"
+                          )}
                           onClick={() => setOptionalDonation(amt)}
                         >
                           {amt === 0 ? 'None' : `LKR ${amt}`}
@@ -493,13 +622,13 @@ export default function EventDetail() {
             <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
-                className="flex-1 rounded-2xl py-3 h-auto font-semibold border-slate-200 dark:border-slate-800"
+                className="flex-1 rounded-2xl py-3 h-auto font-semibold border border-border/40 hover:bg-muted/30 animate-none"
                 onClick={() => setShowRegisterDialog(false)}
               >
                 Cancel
               </Button>
               <Button
-                className="flex-1 rounded-2xl py-3 h-auto font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/25"
+                className="flex-1 rounded-2xl py-3 h-auto font-bold !bg-primary !text-white hover:opacity-90 hover:!text-white shadow-md border-none"
                 onClick={handleConfirmRegistration}
                 disabled={!canProceed || isRegistering}
               >

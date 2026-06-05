@@ -200,6 +200,25 @@ All colors MUST be HSL.
     transition: var(--transition-bounce);
   }
 
+  /* Custom scrollbar utility overrides global scrollbar-hide rules */
+  .custom-scrollbar {
+    scrollbar-width: auto !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    display: block !important;
+    width: 6px !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.2) !important;
+    border-radius: 9999px !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.4) !important;
+  }
+
   /* Interactive Animation Effects */
   @keyframes float {
 
