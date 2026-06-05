@@ -378,8 +378,18 @@ export default function Profile() {
         {/* Mobile View: Select Dropdown */}
         <div className="md:hidden">
           <Select value={activeSection} onValueChange={(value) => setActiveSection(value as SectionKey)}>
-            <SelectTrigger className="w-full h-12 rounded-2xl bg-card border border-border/60 px-4">
-              <SelectValue placeholder="Select Section" />
+            <SelectTrigger className="w-full h-12 rounded-2xl bg-card border-2 border-primary px-4 shadow-sm focus:ring-0 focus:ring-offset-0 focus:outline-none flex items-center justify-between text-primary font-semibold [&_svg]:text-primary [&_svg]:opacity-100">
+              <div className="flex items-center gap-2.5">
+                {(() => {
+                  const activeItem = navItems.find((item) => item.key === activeSection);
+                  if (activeItem) {
+                    const Icon = activeItem.icon;
+                    return <Icon className="h-5 w-5 text-primary shrink-0" />;
+                  }
+                  return null;
+                })()}
+                <SelectValue placeholder="Select Section" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               {navItems.map((item) => {
