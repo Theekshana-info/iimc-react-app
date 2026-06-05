@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { sanitizeHtml } from '@/lib/sanitize';
@@ -217,31 +217,83 @@ export default function EventDetail() {
         </Card>
 
         <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Registration</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to register for "{event.title}"?
-                {event.price && event.price > 0 && (
-                  <span className="block mt-2 font-semibold">
-                    Registration fee: LKR {event.price}
-                  </span>
-                )}
+          <DialogContent className="max-w-md rounded-3xl">
+            <DialogHeader className="pb-4 border-b border-border/20">
+              <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Calendar className="h-5.5 w-5.5 text-primary" />
+                <span>Confirm Registration</span>
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground mt-1">
+                You are about to register for the following event. Please review the details.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex gap-4">
+
+            <div className="space-y-4 py-4">
+              {/* Event Title */}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Event Title</span>
+                <span className="text-base font-bold text-foreground leading-snug">{event.title}</span>
+              </div>
+
+              {/* Event Schedule & Location */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate">{formatEventScheduleLong(event)}</span>
+                </div>
+                {event.location && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span className="truncate">{event.location}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Price / Payment Badge Block */}
+              <div className="p-4 rounded-2xl bg-muted/40 border border-border/30 flex items-center justify-between mt-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Registration Type</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {event.price && event.price > 0 ? 'Paid Registration' : 'Free Event'}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-bold text-primary">
+                    {event.price && event.price > 0 ? `LKR ${event.price}` : 'Free'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Informative Hint */}
+              <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 bg-primary/5 px-3 py-2.5 rounded-xl border border-primary/10">
+                {event.price && event.price > 0
+                  ? "Note: Clicking below will securely redirect you to PayHere gateway to complete your payment."
+                  : "Note: Since this event is free, you will be registered immediately."}
+              </p>
+
+              {/* Terms & Conditions Agreement */}
+              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+                By proceeding, you agree to our{' '}
+                <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2 hover:opacity-80">
+                  Terms & Conditions
+                </Link>
+                .{event.price && event.price > 0 ? " Payments are processed securely via PayHere." : ""}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 rounded-2xl py-3 h-auto font-semibold border-slate-200 dark:border-slate-800"
                 onClick={() => setShowRegisterDialog(false)}
               >
                 Cancel
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 rounded-2xl py-3 h-auto font-semibold shadow-lg shadow-primary/10 hover:shadow-primary/25"
                 onClick={handleRegister}
               >
-                Confirm
+                {event.price && event.price > 0 ? 'Proceed to Pay' : 'Register Now'}
               </Button>
             </div>
           </DialogContent>

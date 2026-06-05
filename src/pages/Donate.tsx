@@ -19,8 +19,8 @@ export default function Donate() {
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
   const [donorMessage, setDonorMessage] = useState('');
-  
-  const predefinedAmounts = [1000, 2500, 5000, 10000];
+
+  const predefinedAmounts = [500, 1000, 2500, 5000];
 
   const { data: bankDetails } = useQuery({
     queryKey: ['bank-details'],
@@ -30,7 +30,7 @@ export default function Donate() {
         .select('*')
         .eq('is_active', true)
         .order('display_order');
-      
+
       if (error) throw error;
       return data;
     },
@@ -115,7 +115,7 @@ export default function Donate() {
                   <Link to="/terms" target="_blank" className="text-primary underline underline-offset-2">
                     Terms & Conditions
                   </Link>
-                  . All donations are non-refundable. Payments are processed securely via PayHere.
+                  . Payments are processed securely via PayHere.
                 </p>
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => setShowDonorForm(false)} className="flex-1">Back</Button>
@@ -168,17 +168,17 @@ export default function Donate() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="custom-amount">Or enter a custom amount (LKR)</Label>
-                  <Input 
-                    id="custom-amount" 
-                    type="text" 
+                  <Input
+                    id="custom-amount"
+                    type="text"
                     inputMode="numeric"
-                    placeholder="Enter amount" 
-                    value={customAmount} 
-                    onChange={(e) => { 
+                    placeholder="Enter amount"
+                    value={customAmount}
+                    onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9]/g, '');
-                      setCustomAmount(val); 
-                      setAmount(''); 
-                    }} 
+                      setCustomAmount(val);
+                      setAmount('');
+                    }}
                   />
                 </div>
                 <Button className="w-full" size="lg" onClick={handleDonate}>Continue</Button>
