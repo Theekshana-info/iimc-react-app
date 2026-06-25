@@ -130,7 +130,7 @@ export default function Maintenance() {
                     placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pr-10 h-11 rounded-xl border-zinc-800 bg-zinc-950 text-white placeholder-zinc-650 focus-visible:ring-1 focus-visible:ring-zinc-700 focus-visible:border-zinc-700 transition-all duration-200"
+                    className="w-full pr-10 h-11 rounded-xl border border-zinc-800 bg-zinc-950 text-white placeholder-zinc-500 focus:border-indigo-500/50 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all duration-200 !shadow-none focus:!shadow-none"
                     disabled={loading}
                     autoComplete="current-password"
                   />
@@ -149,7 +149,7 @@ export default function Maintenance() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-500 text-white active:scale-[0.99] transition-all duration-200 border-none"
+                className="w-full h-11 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-500 text-white active:scale-[0.99] transition-all duration-200 border-none !shadow-none hover:!shadow-none focus:!shadow-none"
               >
                 {loading ? (
                   <div className="flex items-center justify-center gap-2">
