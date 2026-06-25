@@ -34,12 +34,13 @@ import UserDetail from "./pages/UserDetail";
 import AuthCallback from "./pages/AuthCallback";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import { ScrollToTop } from "./components/ScrollToTop";
+import Maintenance from "./pages/Maintenance";
 
 const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const location = useLocation();
-  const hideChrome = location.pathname === "/reset-password" || location.pathname === "/auth/callback";
+  const hideChrome = location.pathname === "/reset-password" || location.pathname === "/auth/callback" || location.pathname === "/maintenance";
   const hideFooter = hideChrome || [
     "/login",
     "/signup",
@@ -71,6 +72,7 @@ const AppLayout = () => {
           <Route path="/payment" element={<Payment />} />
           <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/maintenance" element={<Maintenance />} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />

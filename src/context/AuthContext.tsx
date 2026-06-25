@@ -71,6 +71,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let mounted = true;
     console.log('[Auth] Setting up AuthContext...');
 
+    const syncAdminSession = async (token: string, userId: string) => {
+      try {
+        // Sync local client cookie
+        document.cookie = `sb-access-token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax; Secure`;
+
+        // Check if user has administrator role
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (roles) {
+          console.log('[Auth] Admin role detected. Requesting bypass session...');
+          const res = await fetch('/api/maintenance/admin-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token }),
+          });
+
+          if (res.ok) {
+            console.log('[Auth] Admin bypass session established successfully.');
+            if (window.location.pathname === '/maintenance') {
+              const urlParams = new URLSearchParams(window.location.search);
+              const redirectTo = urlParams.get('redirect') || '/';
+              window.location.href = redirectTo;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Auth] Failed to sync admin session:', err);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
@@ -81,6 +118,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (session?.user) {
           console.log('[Auth] Fetching profile for session (non-blocking)...');
+          
+          // Non-blocking sync for admin bypass cookie
+          syncAdminSession(session.access_token, session.user.id);
+
           // CRITICAL: Do NOT await fetchProfile here!
           // Supabase internally awaits this callback while holding a lock.
           // If we await a Supabase query here, the query waits for the lock,
@@ -93,6 +134,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         } else {
           setProfile(null);
+          // Clear client cookies
+          document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax; Secure`;
           console.log('[Auth] Setting loading to false (no session)');
           setLoading(false);
         }
