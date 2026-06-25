@@ -66,12 +66,12 @@ export default function Maintenance() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a] text-zinc-100 font-sans relative selection:bg-zinc-800">
-      
+
       {/* ─── Minimalist Ambient Background Glow ─── */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.03)_0%,transparent_65%)] pointer-events-none" />
 
       <div className="w-full max-w-[400px] z-10 animate-in fade-in zoom-in-95 duration-300">
-        
+
         {/* Pulse Status Badge */}
         <div className="flex justify-center mb-5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm">
@@ -88,7 +88,7 @@ export default function Maintenance() {
 
         {/* ─── Sleek Enterprise Card ─── */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden">
-          
+
           <div className="text-center pb-4 relative z-10">
             {/* Logo Framed Elegantly */}
             <div className="relative flex justify-center mb-5">
@@ -108,7 +108,7 @@ export default function Maintenance() {
               Our website is currently under development. Authorized reviewers and testers may continue by entering the access password.
             </p>
           </div>
-          
+
           <div className="space-y-4 relative z-10 mt-2">
             {/* Error alerts */}
             {error && (

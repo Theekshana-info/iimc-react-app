@@ -16,7 +16,7 @@ export function Hero() {
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 639px)');
     setIsMobileVideo(mql.matches);
-    
+
     const listener = (e: MediaQueryListEvent) => {
       setIsMobileVideo(e.matches);
     };
@@ -70,9 +70,8 @@ export function Hero() {
             playsInline
             onLoadedData={handleVideoLoad}
             onCanPlay={handleVideoLoad}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${
-              videoLoaded ? 'blur-0 scale-100' : 'blur-2xl scale-110'
-            }`}
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${videoLoaded ? 'blur-0 scale-100' : 'blur-2xl scale-110'
+              }`}
           >
             <source src={isMobileVideo ? mobileVideo : heroVideo} type="video/mp4" />
           </video>
@@ -228,7 +227,7 @@ export function Hero() {
               <h2 className="text-4xl font-extrabold text-sky-200 tracking-[0.2em] uppercase mb-4 font-sans select-none">
                 IIMC
               </h2>
-              
+
               {/* Loading Status Indicator */}
               <div className="h-8 flex items-center justify-center">
                 <motion.p
@@ -239,7 +238,7 @@ export function Hero() {
                   Loading serenity...
                 </motion.p>
               </div>
-              
+
               <p className="text-xs text-slate-400 mt-8 tracking-[0.15em] uppercase select-none opacity-80">
                 Entering a space of mindfulness
               </p>
