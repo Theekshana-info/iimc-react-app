@@ -45,6 +45,24 @@ export default function Payment() {
     }
   }, [navigate, amount, type, isAnonymous]);
 
+  useEffect(() => {
+    // Ensure PayHere script is loaded in case index.html was blocked or failed to load
+    if (!(window as any).payhere) {
+      const scriptId = 'payhere-sdk-injected';
+      if (!document.getElementById(scriptId)) {
+        console.log('Attempting to dynamically load PayHere SDK...');
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://www.payhere.lk/lib/payhere.js';
+        script.type = 'text/javascript';
+        script.async = true;
+        script.onload = () => console.log('PayHere SDK dynamically loaded.');
+        script.onerror = () => console.error('Failed to dynamically load PayHere SDK.');
+        document.head.appendChild(script);
+      }
+    }
+  }, []);
+
   // HIGH-9: Check if email is verified (anonymous donors are exempt)
   const isAuthenticated = user && user.id !== 'anonymous';
   const isEmailVerified = !isAuthenticated || !!user?.email_confirmed_at;
@@ -116,11 +134,21 @@ export default function Payment() {
       if (error) throw error;
       if (!data) throw new Error('No data received from edge function');
 
+      const payhereInstance = (window as any).payhere;
+      if (!payhereInstance) {
+        toast.error('Payment gateway could not be loaded.', {
+          description: 'This is usually caused by an ad-blocker or strict browser privacy settings. Please disable your adblocker/shields for this site and try again.',
+          duration: 10000,
+        });
+        setLoading(false);
+        return;
+      }
+
       // Record when payment was initiated so polling only finds records from THIS attempt
       const paymentInitiatedAt = new Date().toISOString();
 
       // Set up event handlers BEFORE starting payment
-      payhere.onCompleted = function onCompleted(completedOrderId: string) {
+      payhereInstance.onCompleted = function onCompleted(completedOrderId: string) {
         console.log('Payment completed. OrderID:', completedOrderId);
         navigate('/payment-result', {
           state: {
@@ -132,7 +160,7 @@ export default function Payment() {
         });
       };
 
-      payhere.onDismissed = function onDismissed() {
+      payhereInstance.onDismissed = function onDismissed() {
         console.log('Payment dismissed by user');
         supabase
           .from('payment_attempts')
@@ -146,7 +174,7 @@ export default function Payment() {
         setLoading(false);
       };
 
-      payhere.onError = function onError(errorMsg: string) {
+      payhereInstance.onError = function onError(errorMsg: string) {
         console.error('PayHere error:', errorMsg);
         supabase
           .from('payment_attempts')
@@ -218,7 +246,7 @@ export default function Payment() {
         payment.duration = data.duration;
       }
 
-      payhere.startPayment(payment);
+      payhereInstance.startPayment(payment);
 
     } catch (error) {
       console.error('Payment error:', error);
