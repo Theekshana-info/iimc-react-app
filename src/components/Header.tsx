@@ -105,10 +105,9 @@ export function Header({ isAuthPage = false }: HeaderProps) {
     { to: '/blog', label: 'Insights & Blog', icon: BookOpen },
   ];
 
-  // If on an authentication page, show the simplified header
   if (isAuthPage) {
     return (
-      <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8">
+      <header className="fixed top-4 left-0 right-0 z-50 w-full px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto rounded-full flex h-16 items-center justify-between px-4 sm:sm:px-6 transition-all duration-300 bg-slate-900/10 dark:bg-slate-900/25 backdrop-blur-lg border border-white/40 dark:border-sky-900/20 shadow-md shadow-sky-950/5 dark:shadow-black/20">
           <Link to="/" className="flex items-center gap-2">
             <img

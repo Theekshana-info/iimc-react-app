@@ -51,7 +51,8 @@ export default function SignUp() {
 
   useEffect(() => {
     if (user) {
-      const from = (location.state as any)?.from?.pathname || '/';
+      const state = location.state as { from?: { pathname: string } } | null;
+      const from = state?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
   }, [user, navigate, location]);
@@ -167,7 +168,7 @@ export default function SignUp() {
     <AuthLayout>
       <AuthCard
         title="Create an Account"
-        description="Join Isipathana International Meditation Center"
+        description="Join IIMC today"
       >
 
         {googleExistsMessage && (
@@ -177,6 +178,11 @@ export default function SignUp() {
             </p>
           </div>
         )}
+
+        <div className="mt-4">
+          <GoogleSignInButton termsAccepted={termsAccepted} />
+          <AuthDivider />
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <AuthInput
@@ -261,10 +267,6 @@ export default function SignUp() {
           >
             Sign Up
           </AuthButton>
-
-          <AuthDivider />
-
-          <GoogleSignInButton termsAccepted={termsAccepted} />
 
           <div className="text-center text-sm mt-6">
             <span className="text-muted-foreground">Already have an account? </span>

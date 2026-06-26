@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -6,14 +6,26 @@ import { Loader2 } from 'lucide-react';
 export function GoogleSignInButton({ termsAccepted }: { termsAccepted?: boolean }) {
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    if (termsAccepted === false) {
-      toast.error('Please agree to the Terms & Conditions to continue.');
-      return;
-    }
+  useEffect(() => {
+    const handlePageShow = () => {
+      setLoading(false);
+    };
 
+    // Reset loading state if the user navigates back to this page (bfcache restore)
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
+
+  const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
+
+      // Safety timeout: if redirect takes too long or is interrupted, restore the button state after 6 seconds
+      const timeoutId = setTimeout(() => {
+        setLoading(false);
+      }, 6000);
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -26,7 +38,10 @@ export function GoogleSignInButton({ termsAccepted }: { termsAccepted?: boolean 
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
 
       // The browser will redirect to Google — no further action needed here.
     } catch (error) {
