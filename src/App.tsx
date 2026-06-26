@@ -41,11 +41,15 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const location = useLocation();
-  const hideChrome = location.pathname === "/reset-password" || location.pathname === "/auth/callback" || location.pathname === "/maintenance";
-  const hideFooter = hideChrome || [
+  const isAuthPage = [
     "/login",
     "/signup",
     "/forgot-password",
+    "/reset-password"
+  ].includes(location.pathname);
+
+  const hideChrome = location.pathname === "/auth/callback" || location.pathname === "/maintenance";
+  const hideFooter = hideChrome || isAuthPage || [
     "/profile",
     "/payment"
   ].includes(location.pathname);
@@ -53,7 +57,7 @@ const AppLayout = () => {
   return (
     <>
       <ScrollToTop />
-      {!hideChrome && <Header />}
+      {!hideChrome && <Header isAuthPage={isAuthPage} />}
       {!hideChrome && <EmailVerificationBanner />}
       <main className="relative z-10 pb-16 lg:pb-0">
         <Routes>
@@ -93,7 +97,7 @@ const AppLayout = () => {
         </Routes>
       </main>
       {!hideFooter && <Footer />}
-      {!hideChrome && <MobileNavbar />}
+      {!hideChrome && !isAuthPage && <MobileNavbar />}
     </>
   );
 };
