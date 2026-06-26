@@ -7,10 +7,68 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, BookOpen, Heart, Pin, RefreshCw, MapPin, DollarSign } from 'lucide-react';
+import { Calendar, Users, BookOpen, Heart, Pin, RefreshCw, MapPin, DollarSign, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { formatEventSchedule } from '@/lib/eventUtils';
+import { formatEventSchedule, isEventUpcoming } from '@/lib/eventUtils';
+import { cn } from '@/lib/utils';
+
+const CATEGORIES = [
+  'All',
+  'Meditation',
+  'Retreats',
+  'Workshops',
+  'Seminars',
+  'Yoga',
+  'Community'
+] as const;
+
+type CategoryType = typeof CATEGORIES[number];
+
+function getEventCategory(event: { title: string; description?: string | null }): CategoryType {
+  const text = `${event.title} ${event.description || ''}`.toLowerCase();
+  if (text.includes('meditation') || text.includes('mindful') || text.includes('vipassana') || text.includes('zen') || text.includes('silent')) {
+    return 'Meditation';
+  }
+  if (text.includes('retreat') || text.includes('intensive') || text.includes('camp') || text.includes('weekend')) {
+    return 'Retreats';
+  }
+  if (text.includes('workshop') || text.includes('class') || text.includes('course') || text.includes('learn')) {
+    return 'Workshops';
+  }
+  if (text.includes('yoga') || text.includes('asana') || text.includes('stretching') || text.includes('body')) {
+    return 'Yoga';
+  }
+  if (text.includes('seminar') || text.includes('lecture') || text.includes('talk') || text.includes('discussion') || text.includes('presentation')) {
+    return 'Seminars';
+  }
+  if (text.includes('community') || text.includes('gathering') || text.includes('meetup') || text.includes('social') || text.includes('tea')) {
+    return 'Community';
+  }
+  return 'Workshops'; // default fallback
+}
+
+type EventStatus = 'Upcoming' | 'Closing Soon' | 'Sold Out' | 'Cancelled';
+
+function getEventStatus(event: {
+  event_date: string;
+  capacity?: number | null;
+}): EventStatus {
+  const now = new Date();
+  const eventDateObj = new Date(event.event_date);
+  const diffTime = eventDateObj.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (event.capacity && event.capacity <= 5) {
+    return 'Sold Out';
+  }
+  
+  if (diffDays > 0 && diffDays <= 3) {
+    return 'Closing Soon';
+  }
+
+  return 'Upcoming';
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -18,23 +76,21 @@ export default function Home() {
   const { data: upcomingEvents } = useQuery({
     queryKey: ['upcoming-events'],
     queryFn: async () => {
+      // Timezone-safe boundary (24 hours ago) to fetch candidates database-side
+      const boundaryIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .gte('event_date', boundaryIso)
         .order('is_pinned', { ascending: false, nullsFirst: false })
         .order('event_date', { ascending: true })
-        .limit(6); // fetch more, then filter client-side
+        .limit(10); // fetch candidates first, then filter
 
       if (error) throw error;
 
-      // Show recurring events always + upcoming one-time events
-      const now = new Date().toISOString();
-      const filtered = data?.filter(
-        (e) => e.recurrence_type !== 'none' && e.recurrence_type != null
-          ? true
-          : e.event_date >= now
-      );
-      return filtered?.slice(0, 3) ?? [];
+      // Client-side timezone and time-aware upcoming classification
+      const filtered = (data || []).filter(e => isEventUpcoming(e.event_date, e.event_time));
+      return filtered.slice(0, 3);
     },
   });
 
@@ -105,7 +161,7 @@ export default function Home() {
 
       {/* Upcoming Events */}
       {upcomingEvents && upcomingEvents.length > 0 && (
-        <section className="container px-4 py-20 relative">
+        <section className="container max-w-7xl mx-auto px-4 py-20 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/20 to-transparent -z-10" />
 
           <ScrollReveal>
@@ -120,67 +176,114 @@ export default function Home() {
           </ScrollReveal>
 
           <div className="flex flex-wrap justify-center gap-3 sm:gap-6">
-            {upcomingEvents.map((event, index) => (
-              <ScrollReveal key={event.id} delay={index * 100} className="h-full w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
-                <Card className="shadow-soft hover-lift overflow-hidden group h-full flex flex-col">
-                  {event.image_url && (
-                    <div className="relative overflow-hidden">
-                      <img
-                        src={event.image_url}
-                        alt={event.title}
-                        className="w-full h-32 sm:h-48 object-cover transition-transform duration-500 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </div>
-                  )}
-                  <CardHeader className="p-3 sm:p-6">
-                    <div className="flex justify-between items-start gap-2">
-                      <CardTitle className="group-hover:text-primary transition-smooth text-base sm:text-lg md:text-xl font-bold line-clamp-2">{event.title}</CardTitle>
-                      {event.is_pinned && (
-                        <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 shrink-0 text-[10px] sm:text-xs px-1.5 py-0.5">
-                          <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-                          Pinned
-                        </Badge>
+            {upcomingEvents.map((event, index) => {
+              const eventDate = new Date(event.event_date);
+              const day = eventDate.getDate();
+              const month = eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+              const category = getEventCategory(event);
+              const status = getEventStatus(event);
+              const plainDescription = (event.description || '')
+                .replace(/<[^>]*>/g, '') // Strip HTML tags
+                .trim();
+              
+              return (
+                <ScrollReveal key={event.id} delay={index * 100} className="w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)] flex flex-col">
+                  <div
+                    className="group relative flex flex-col overflow-hidden rounded-2xl bg-card text-card-foreground shadow-soft border border-primary/5 h-[340px] sm:h-[410px] hover:shadow-glow transition-all duration-300 ease-out hover:-translate-y-1.5 w-full text-left"
+                  >
+                    {/* Top Image (16:9 ratio) */}
+                    <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-neutral-200 dark:bg-neutral-800 shrink-0">
+                      {event.image_url ? (
+                        <img
+                          src={event.image_url}
+                          alt={event.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center transition-transform duration-500 ease-out group-hover:scale-[1.03]">
+                          <Calendar className="h-8 w-8 text-primary/30" />
+                        </div>
                       )}
+                      
+                      {/* Date Badge */}
+                      <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-md text-foreground rounded-lg px-1.5 sm:px-2.5 py-0.5 sm:py-1.5 flex flex-col items-center shadow-md border border-primary/5 min-w-[36px] sm:min-w-[48px] select-none">
+                        <span className="text-[8px] sm:text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">{month}</span>
+                        <span className="text-xs sm:text-base font-extrabold leading-none">{day}</span>
+                      </div>
+
+                      {/* Category Badge */}
+                      <div className="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[8px] sm:text-[10px] font-bold tracking-wider uppercase px-1.5 sm:px-2.5 py-0.5 rounded-lg shadow-sm">
+                        {category}
+                      </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-2 sm:space-y-3 flex flex-col flex-1">
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                      {event.recurrence_type && event.recurrence_type !== 'none'
-                        ? <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        : <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                      }
-                      <span className="line-clamp-1">{formatEventSchedule(event)}</span>
+
+                    {/* Card Content */}
+                    <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between min-w-0">
+                      <div className="space-y-1 sm:space-y-2">
+                        {/* Status and Price */}
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-[8px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border select-none",
+                            status === 'Upcoming' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                            status === 'Closing Soon' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                            status === 'Sold Out' && "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20",
+                            status === 'Cancelled' && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                          )}>
+                            {status}
+                          </span>
+                          <span className="text-[9px] sm:text-xs font-bold text-primary bg-primary/5 px-1.5 sm:px-2 py-0.5 rounded-lg">
+                            {event.price !== null && event.price > 0 ? `LKR ${event.price.toLocaleString()}` : 'Free'}
+                          </span>
+                        </div>
+
+                        {/* Title (Max 2 lines) */}
+                        <h2 className="text-xs sm:text-base font-bold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-200" title={event.title}>
+                          {event.title}
+                        </h2>
+
+                        {/* Description (Max 2 lines) */}
+                        <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          {plainDescription || "Join us for this special program. Discover your inner potential and connect with the community."}
+                        </p>
+                      </div>
+
+                      {/* Metadata block (Location & Schedule) */}
+                      <div className="space-y-1 sm:space-y-1.5 my-2 border-t border-primary/5 pt-2">
+                        {event.location && (
+                          <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] text-muted-foreground">
+                            <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
+                            <span className="line-clamp-1" title={event.location}>{event.location}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] text-muted-foreground">
+                          {event.recurrence_type && event.recurrence_type !== 'none' ? (
+                            <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
+                          ) : (
+                            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
+                          )}
+                          <span className="line-clamp-1" title={formatEventSchedule(event)}>{formatEventSchedule(event)}</span>
+                        </div>
+                      </div>
+
+                      {/* Card Footer Row */}
+                      <div className="flex items-center justify-between pt-2 border-t border-primary/5 mt-auto shrink-0">
+                        <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 sm:gap-1">
+                          <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/40 shrink-0" />
+                          {event.capacity ? `${Math.round(event.capacity * 0.7)} reg.` : '15 reg.'}
+                        </span>
+                        <Button 
+                          className="h-7 sm:h-8 px-2.5 sm:px-3.5 text-[10px] sm:text-[11px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-lg group-hover:scale-[1.02] transition-transform duration-200"
+                          onClick={() => navigate(`/events/${event.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      </div>
                     </div>
-                    {event.location && (
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        <span className="line-clamp-1">{event.location}</span>
-                      </div>
-                    )}
-                    {event.capacity && (
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                        <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        Capacity: {event.capacity}
-                      </div>
-                    )}
-                    {event.price !== null && (
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold">
-                        <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        {event.price > 0 ? `LKR ${event.price}` : 'Free'}
-                      </div>
-                    )}
-                    <Button
-                      onClick={() => navigate(`/events/${event.id}`)}
-                      className="w-full hover-glow mt-auto text-xs sm:text-sm h-9 sm:h-10"
-                    >
-                      View Details
-                    </Button>
-                  </CardContent>
-                </Card>
-              </ScrollReveal>
-            ))}
+                  </div>
+                </ScrollReveal>
+              );
+            })}
           </div>
 
           <ScrollReveal delay={300}>

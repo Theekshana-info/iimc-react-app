@@ -10,8 +10,12 @@ import {
   RefreshCw, 
   ArrowUpDown, 
   Clock, 
-  Inbox 
+  Inbox,
+  DollarSign,
+  Pin
 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Select, 
   SelectContent, 
@@ -21,7 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollReveal } from '@/components/ScrollReveal';
-import { formatEventSchedule } from '@/lib/eventUtils';
+import { formatEventSchedule, isEventUpcoming } from '@/lib/eventUtils';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -116,22 +120,22 @@ export default function Events() {
   const { data: events, isLoading } = useQuery({
     queryKey: ['events'],
     queryFn: async () => {
-      // Fetch all events: pinned first, then by date ascending.
+      // Timezone-safe boundary (24 hours ago) to fetch candidates database-side
+      const boundaryIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .gte('event_date', boundaryIso)
         .order('is_pinned', { ascending: false, nullsFirst: false })
         .order('event_date', { ascending: true });
 
       if (error) throw error;
-
-      // Filter: show one-time upcoming events + all recurring events
-      const now = new Date().toISOString();
-      return data?.filter(
-        (e) => e.recurrence_type !== 'none' && e.recurrence_type != null
-          ? true  // always show recurring events
-          : e.event_date >= now // only show upcoming one-time events
-      ) || [];
+      
+      // Client-side timezone and time-aware upcoming classification
+      const upcoming = (data || []).filter(event => 
+        isEventUpcoming(event.event_date, event.event_time)
+      );
+      return upcoming;
     },
   });
 
@@ -333,11 +337,11 @@ export default function Events() {
 
         {/* Loading Skeletons */}
         {isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 w-full">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex flex-col overflow-hidden rounded-2xl bg-card border border-primary/5 h-[340px] sm:h-[410px] shadow-soft">
+              <div key={i} className="flex flex-col overflow-hidden rounded-2xl bg-card border border-primary/5 h-[340px] sm:h-[400px] shadow-soft w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]">
                 <Skeleton className="aspect-video w-full rounded-t-2xl" />
-                <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between">
+                <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <Skeleton className="h-4 w-12 sm:w-16 rounded-full" />
@@ -360,12 +364,12 @@ export default function Events() {
           </div>
         ) : (
           <>
-            {/* Event Cards Grid - Responsive, 2 columns on Mobile */}
+            {/* Event Cards Grid - Centered Flexbox container to center cards when single/few items */}
             <motion.div 
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6"
+              className="flex flex-wrap justify-center gap-3 sm:gap-6 w-full"
             >
               <AnimatePresence>
                 {pagedEvents.map((event) => {
@@ -383,95 +387,99 @@ export default function Events() {
                       key={event.id}
                       variants={cardVariants}
                       layout
-                      className="group relative flex flex-col overflow-hidden rounded-2xl bg-card text-card-foreground shadow-soft border border-primary/5 h-[340px] sm:h-[410px] hover:shadow-glow transition-all duration-300 ease-out hover:-translate-y-1.5"
+                      className="w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)] flex flex-col"
                     >
-                      {/* Top Image (16:9 ratio) */}
-                      <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-neutral-200 dark:bg-neutral-800 shrink-0">
-                        {event.image_url ? (
-                          <img
-                            src={event.image_url}
-                            alt={event.title}
-                            loading="lazy"
-                            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center transition-transform duration-500 ease-out group-hover:scale-[1.03]">
-                            <Calendar className="h-8 w-8 text-primary/30" />
-                          </div>
-                        )}
-                        
-                        {/* Date Badge */}
-                        <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-md text-foreground rounded-lg px-1.5 sm:px-2.5 py-0.5 sm:py-1.5 flex flex-col items-center shadow-md border border-primary/5 min-w-[36px] sm:min-w-[48px] select-none">
-                          <span className="text-[8px] sm:text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">{month}</span>
-                          <span className="text-xs sm:text-base font-extrabold leading-none">{day}</span>
-                        </div>
-
-                        {/* Category Badge */}
-                        <div className="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[8px] sm:text-[10px] font-bold tracking-wider uppercase px-1.5 sm:px-2.5 py-0.5 rounded-lg shadow-sm">
-                          {category}
-                        </div>
-                      </div>
-
-                      {/* Card Content */}
-                      <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between min-w-0">
-                        <div className="space-y-1 sm:space-y-2">
-                          {/* Status and Price */}
-                          <div className="flex items-center justify-between">
-                            <span className={cn(
-                              "text-[8px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border select-none",
-                              status === 'Upcoming' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                              status === 'Closing Soon' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                              status === 'Sold Out' && "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20",
-                              status === 'Cancelled' && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
-                            )}>
-                              {status}
-                            </span>
-                            <span className="text-[9px] sm:text-xs font-bold text-primary bg-primary/5 px-1.5 sm:px-2 py-0.5 rounded-lg">
-                              {event.price !== null && event.price > 0 ? `LKR ${event.price.toLocaleString()}` : 'Free'}
-                            </span>
-                          </div>
-
-                          {/* Title (Max 2 lines) */}
-                          <h2 className="text-xs sm:text-base font-bold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-200" title={event.title}>
-                            {event.title}
-                          </h2>
-
-                          {/* Description (Max 2 lines) */}
-                          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                            {plainDescription || "Join us for this special program. Discover your inner potential and connect with the community."}
-                          </p>
-                        </div>
-
-                        {/* Metadata block (Location & Schedule) */}
-                        <div className="space-y-1 sm:space-y-1.5 my-2 border-t border-primary/5 pt-2">
-                          {event.location && (
-                            <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] text-muted-foreground">
-                              <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
-                              <span className="line-clamp-1" title={event.location}>{event.location}</span>
+                      <div
+                        className="group relative flex flex-col overflow-hidden rounded-2xl bg-card text-card-foreground shadow-soft border border-primary/5 h-[340px] sm:h-[410px] hover:shadow-glow transition-all duration-300 ease-out hover:-translate-y-1.5 w-full text-left"
+                      >
+                        {/* Top Image (16:9 ratio) */}
+                        <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-neutral-200 dark:bg-neutral-800 shrink-0">
+                          {event.image_url ? (
+                            <img
+                              src={event.image_url}
+                              alt={event.title}
+                              loading="lazy"
+                              className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center transition-transform duration-500 ease-out group-hover:scale-[1.03]">
+                              <Calendar className="h-8 w-8 text-primary/30" />
                             </div>
                           )}
-                          <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] text-muted-foreground">
-                            {event.recurrence_type && event.recurrence_type !== 'none' ? (
-                              <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
-                            ) : (
-                              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
-                            )}
-                            <span className="line-clamp-1" title={formatEventSchedule(event)}>{formatEventSchedule(event)}</span>
+                          
+                          {/* Date Badge */}
+                          <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-md text-foreground rounded-lg px-1.5 sm:px-2.5 py-0.5 sm:py-1.5 flex flex-col items-center shadow-md border border-primary/5 min-w-[36px] sm:min-w-[48px] select-none">
+                            <span className="text-[8px] sm:text-[10px] font-bold text-primary tracking-wider leading-none mb-0.5">{month}</span>
+                            <span className="text-xs sm:text-base font-extrabold leading-none">{day}</span>
+                          </div>
+
+                          {/* Category Badge */}
+                          <div className="absolute top-2 right-2 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[8px] sm:text-[10px] font-bold tracking-wider uppercase px-1.5 sm:px-2.5 py-0.5 rounded-lg shadow-sm">
+                            {category}
                           </div>
                         </div>
 
-                        {/* Card Footer Row */}
-                        <div className="flex items-center justify-between pt-2 border-t border-primary/5 mt-auto shrink-0">
-                          <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 sm:gap-1">
-                            <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/40 shrink-0" />
-                            {event.capacity ? `${Math.round(event.capacity * 0.7)} reg.` : '15 reg.'}
-                          </span>
-                          <Button 
-                            className="h-7 sm:h-8 px-2.5 sm:px-3.5 text-[10px] sm:text-[11px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-lg group-hover:scale-[1.02] transition-transform duration-200"
-                            onClick={() => navigate(`/events/${event.id}`)}
-                          >
-                            View Details
-                          </Button>
+                        {/* Card Content */}
+                        <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between min-w-0">
+                          <div className="space-y-1 sm:space-y-2">
+                            {/* Status and Price */}
+                            <div className="flex items-center justify-between">
+                              <span className={cn(
+                                "text-[8px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border select-none",
+                                status === 'Upcoming' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                                status === 'Closing Soon' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                                status === 'Sold Out' && "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20",
+                                status === 'Cancelled' && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                              )}>
+                                {status}
+                              </span>
+                              <span className="text-[9px] sm:text-xs font-bold text-primary bg-primary/5 px-1.5 sm:px-2 py-0.5 rounded-lg">
+                                {event.price !== null && event.price > 0 ? `LKR ${event.price.toLocaleString()}` : 'Free'}
+                              </span>
+                            </div>
+
+                            {/* Title (Max 2 lines) */}
+                            <h2 className="text-xs sm:text-base font-bold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-200" title={event.title}>
+                              {event.title}
+                            </h2>
+
+                            {/* Description (Max 2 lines) */}
+                            <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {plainDescription || "Join us for this special program. Discover your inner potential and connect with the community."}
+                            </p>
+                          </div>
+
+                          {/* Metadata block (Location & Schedule) */}
+                          <div className="space-y-1 sm:space-y-1.5 my-2 border-t border-primary/5 pt-2">
+                            {event.location && (
+                              <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] text-muted-foreground">
+                                <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
+                                <span className="line-clamp-1" title={event.location}>{event.location}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[11px] text-muted-foreground">
+                              {event.recurrence_type && event.recurrence_type !== 'none' ? (
+                                <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
+                              ) : (
+                                <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/60 shrink-0" />
+                              )}
+                              <span className="line-clamp-1" title={formatEventSchedule(event)}>{formatEventSchedule(event)}</span>
+                            </div>
+                          </div>
+
+                          {/* Card Footer Row */}
+                          <div className="flex items-center justify-between pt-2 border-t border-primary/5 mt-auto shrink-0">
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 sm:gap-1">
+                              <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary/40 shrink-0" />
+                              {event.capacity ? `${Math.round(event.capacity * 0.7)} reg.` : '15 reg.'}
+                            </span>
+                            <Button 
+                              className="h-7 sm:h-8 px-2.5 sm:px-3.5 text-[10px] sm:text-[11px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm rounded-lg group-hover:scale-[1.02] transition-transform duration-200"
+                              onClick={() => navigate(`/events/${event.id}`)}
+                            >
+                              View Details
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -487,16 +495,18 @@ export default function Events() {
                   <div className="inline-flex p-4 rounded-full bg-primary/10 text-primary mb-4 animate-breathe">
                     <Inbox className="h-8 w-8" />
                   </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">No events found</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-2">No Upcoming Events</h3>
                   <p className="text-xs md:text-sm text-muted-foreground mb-6 leading-relaxed">
-                    We couldn't find any events matching your selected criteria. Try adjusting your search query, or clear filters to view all events.
+                    There are no scheduled events at the moment. Please check back later.
                   </p>
-                  <Button 
-                    onClick={clearFilters}
-                    className="h-9 px-4 text-xs font-bold"
-                  >
-                    Clear All Filters
-                  </Button>
+                  {events && events.length > 0 && (
+                    <Button 
+                      onClick={clearFilters}
+                      className="h-9 px-4 text-xs font-bold"
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
                 </div>
               </ScrollReveal>
             )}

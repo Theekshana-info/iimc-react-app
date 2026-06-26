@@ -76,3 +76,33 @@ export function formatEventScheduleLong(event: {
   const datePart = format(new Date(event.event_date), 'PPP');
   return `${datePart}${timePart}`;
 }
+
+/**
+ * Checks dynamically if an event is upcoming.
+ * An event is considered upcoming when:
+ * - If eventTimeStr (e.g. "18:30") is present, combined date and time is >= now.
+ * - If eventTimeStr is absent, date-only midnight comparison is >= today local midnight.
+ */
+export function isEventUpcoming(eventDateStr: string, eventTimeStr?: string | null): boolean {
+  const now = new Date();
+  const eventDateObj = new Date(eventDateStr);
+  
+  // Extract UTC date components as stored by the system
+  const year = eventDateObj.getUTCFullYear();
+  const month = eventDateObj.getUTCMonth();
+  const date = eventDateObj.getUTCDate();
+  
+  if (eventTimeStr) {
+    // Parse time string e.g. "18:30" or "18:30:00"
+    const [h, m] = eventTimeStr.split(':').map(Number);
+    // Construct local date-time representing the event's start
+    const combinedEventDate = new Date(year, month, date, h, m || 0, 0, 0);
+    return combinedEventDate >= now;
+  } else {
+    // Midnight-to-midnight local date comparison
+    const eventMidnight = new Date(year, month, date, 0, 0, 0, 0);
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    return eventMidnight >= todayMidnight;
+  }
+}
+

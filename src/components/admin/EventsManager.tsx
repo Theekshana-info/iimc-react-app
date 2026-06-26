@@ -12,9 +12,89 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Pencil, Trash2, Plus, UsersRound, CalendarDays, X, RefreshCw, AlertCircle } from 'lucide-react';
+import { 
+  Pencil, 
+  Trash2, 
+  Plus, 
+  UsersRound, 
+  CalendarDays, 
+  X, 
+  RefreshCw, 
+  AlertCircle, 
+  Copy, 
+  Download, 
+  ChevronDown, 
+  ChevronUp, 
+  Search,
+  Clock
+} from 'lucide-react';
 import { ImageUploadField } from './ImageUploadField';
 import { EventRegistrationsView } from './EventRegistrationsView';
+import { isEventUpcoming } from '@/lib/eventUtils';
+
+const CATEGORIES = [
+  'All',
+  'Meditation',
+  'Retreats',
+  'Workshops',
+  'Seminars',
+  'Yoga',
+  'Community'
+] as const;
+
+type CategoryType = typeof CATEGORIES[number];
+
+function getEventCategory(event: { title: string; description?: string | null }): CategoryType {
+  const text = `${event.title} ${event.description || ''}`.toLowerCase();
+  if (text.includes('meditation') || text.includes('mindful') || text.includes('vipassana') || text.includes('zen') || text.includes('silent')) {
+    return 'Meditation';
+  }
+  if (text.includes('retreat') || text.includes('intensive') || text.includes('camp') || text.includes('weekend')) {
+    return 'Retreats';
+  }
+  if (text.includes('workshop') || text.includes('class') || text.includes('course') || text.includes('learn')) {
+    return 'Workshops';
+  }
+  if (text.includes('yoga') || text.includes('asana') || text.includes('stretching') || text.includes('body')) {
+    return 'Yoga';
+  }
+  if (text.includes('seminar') || text.includes('lecture') || text.includes('talk') || text.includes('discussion') || text.includes('presentation')) {
+    return 'Seminars';
+  }
+  if (text.includes('community') || text.includes('gathering') || text.includes('meetup') || text.includes('social') || text.includes('tea')) {
+    return 'Community';
+  }
+  return 'Workshops'; // default fallback
+}
+
+function getAdminEventStatusBadge(event: any, paidRegs: number) {
+  const now = new Date();
+  const eventDateObj = new Date(event.event_date);
+  const diffTime = eventDateObj.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (event.capacity && paidRegs >= event.capacity) {
+    return (
+      <Badge variant="outline" className="bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20 text-[9px] px-1.5 py-0 select-none">
+        Sold Out
+      </Badge>
+    );
+  }
+  
+  if (diffDays > 0 && diffDays <= 3) {
+    return (
+      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[9px] px-1.5 py-0 select-none">
+        Closing Soon
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[9px] px-1.5 py-0 select-none">
+      Upcoming
+    </Badge>
+  );
+}
 
 export function EventsManager() {
   const queryClient = useQueryClient();
@@ -36,6 +116,14 @@ export function EventsManager() {
   const [recurrenceType, setRecurrenceType] = useState('none');
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
 
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  
+  // Collapse/Expand state for past events
+  const [pastExpanded, setPastExpanded] = useState(false);
+  const [visiblePastCount, setVisiblePastCount] = useState(5);
+
   const getTodayLocalString = () => {
     const date = new Date();
     const offset = date.getTimezoneOffset();
@@ -50,16 +138,47 @@ export function EventsManager() {
     }
   };
 
-  const { data: events } = useQuery({
-    queryKey: ['admin-events'],
+  // Timezone-safe boundary (24 hours ago) to fetch candidates database-side
+  const boundaryIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  // Fetch Upcoming Events candidate slice (>= boundary) ordered by date ascending
+  const { data: upcomingEvents, isLoading: loadingUpcoming } = useQuery({
+    queryKey: ['admin-upcoming-events'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
-        .order('is_pinned', { ascending: false })
+        .select(`
+          *,
+          event_registrations (
+            id,
+            status
+          )
+        `)
+        .gte('event_date', boundaryIso)
+        .order('is_pinned', { ascending: false, nullsFirst: false })
+        .order('event_date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch Past Events (< boundary) ordered by date descending
+  const { data: pastEvents, isLoading: loadingPast } = useQuery({
+    queryKey: ['admin-past-events'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          event_registrations (
+            id,
+            status
+          )
+        `)
+        .lt('event_date', boundaryIso)
         .order('event_date', { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
@@ -69,7 +188,8 @@ export function EventsManager() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-upcoming-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-past-events'] });
       toast.success('Event created');
       resetForm();
     },
@@ -81,7 +201,8 @@ export function EventsManager() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-upcoming-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-past-events'] });
       toast.success('Event updated');
       resetForm();
     },
@@ -93,10 +214,83 @@ export function EventsManager() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-upcoming-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-past-events'] });
       toast.success('Event deleted');
     },
   });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (event: any) => {
+      const { id, created_at, event_registrations, ...rest } = event;
+      
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const date = String(today.getDate()).padStart(2, '0');
+      const todayMidnightIso = `${year}-${month}-${date}T00:00:00.000Z`;
+
+      const duplicatedEvent = {
+        ...rest,
+        title: `${event.title} (Copy)`,
+        event_date: todayMidnightIso,
+      };
+      const { error } = await supabase.from('events').insert(duplicatedEvent);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-upcoming-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-past-events'] });
+      toast.success('Event duplicated successfully');
+    },
+    onError: (error) => {
+      toast.error(`Duplication failed: ${error.message}`);
+    }
+  });
+
+  const exportEventRegistrations = async (eventId: string, eventTitle: string) => {
+    const { data, error } = await supabase
+      .from('event_registrations')
+      .select(`
+        *,
+        profiles:user_id (
+          full_name,
+          email,
+          phone
+        )
+      `)
+      .eq('event_id', eventId)
+      .eq('status', 'paid')
+      .order('registered_at', { ascending: false });
+    
+    if (error || !data || data.length === 0) {
+      toast.error(error ? 'Failed to export attendee list' : 'No paid registrations to export');
+      return;
+    }
+
+    const headers = ['Name', 'Email', 'Phone', 'Registration Date', 'Status'];
+    const rows = data.map((reg: any) => [
+      reg.profiles?.full_name || '',
+      reg.profiles?.email || '',
+      reg.profiles?.phone || '',
+      reg.registered_at ? format(new Date(reg.registered_at), 'PPP') : '',
+      reg.status || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${eventTitle}-attendees.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Attendee list exported successfully');
+  };
 
   const resetForm = () => {
     setTitle('');
@@ -152,95 +346,372 @@ export function EventsManager() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <Button onClick={() => setShowDialog(true)}>
-        <Plus className="h-4 w-4 mr-2" />
-        Add Event
-      </Button>
+  const matchesFilters = (event: any) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = 
+      event.title.toLowerCase().includes(searchLower) ||
+      (event.location || '').toLowerCase().includes(searchLower);
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Sessions</TableHead>
-              <TableHead>Registrations</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events?.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {event.title}
-                    {event.is_pinned && <Badge variant="secondary" className="text-xs">Pinned</Badge>}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <span>{format(new Date(event.event_date), 'PPP')}</span>
-                    {event.recurrence_type && event.recurrence_type !== 'none' && (
-                      <Badge variant="outline" className="w-fit text-[10px] capitalize bg-primary/5 text-primary border-primary/20">
-                        {event.recurrence_type}
-                      </Badge>
+    const category = getEventCategory(event);
+    const matchesCategory = categoryFilter === 'all' || category.toLowerCase() === categoryFilter.toLowerCase();
+
+    return matchesSearch && matchesCategory;
+  };
+
+  // Dynamically classify events into Upcoming and Past timezone-safely
+  const classifiedUpcoming = (upcomingEvents || []).filter(e => isEventUpcoming(e.event_date, e.event_time));
+  const transitionPast = (upcomingEvents || []).filter(e => !isEventUpcoming(e.event_date, e.event_time));
+  const classifiedPast = [...transitionPast, ...(pastEvents || [])];
+
+  const filteredUpcoming = classifiedUpcoming.filter(matchesFilters);
+  const filteredPast = classifiedPast.filter(matchesFilters);
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Top Statistics cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 bg-background/50 border border-primary/10 rounded-2xl shadow-soft flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-black text-primary">
+              {classifiedUpcoming.length}
+            </div>
+            <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">Upcoming Events</div>
+          </div>
+          <CalendarDays className="h-8 w-8 text-primary/40" />
+        </div>
+        <div className="p-4 bg-background/50 border border-primary/10 rounded-2xl shadow-soft flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-black text-muted-foreground">
+              {classifiedPast.length}
+            </div>
+            <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider">Past Events</div>
+          </div>
+          <Clock className="h-8 w-8 text-muted-foreground/40" />
+        </div>
+      </div>
+
+      {/* Shared Filters and Controls Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center bg-background/50 border border-primary/10 p-3 rounded-2xl shadow-soft">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search events by title or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-10 w-full bg-background/50 border-primary/10 rounded-xl text-sm"
+          />
+        </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="h-10 w-full sm:w-[180px] bg-background/50 border-primary/10 rounded-xl text-xs font-semibold">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {CATEGORIES.filter(c => c !== 'All').map(cat => (
+              <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button onClick={() => { resetForm(); setShowDialog(true); }} className="h-10 shrink-0 w-full sm:w-auto font-bold text-xs px-4 rounded-xl">
+          <Plus className="h-4 w-4 mr-2" /> Add Event
+        </Button>
+      </div>
+
+      {/* 1. Upcoming Events Section */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          Upcoming Events ({filteredUpcoming.length})
+        </h3>
+        
+        {loadingUpcoming ? (
+          <p className="text-sm text-muted-foreground animate-pulse">Loading upcoming events...</p>
+        ) : (
+          <div className="rounded-2xl border border-primary/5 bg-background/50 overflow-hidden shadow-soft">
+            <Table>
+              <TableHeader className="bg-primary/5">
+                <TableRow>
+                  <TableHead className="font-bold text-xs">Title</TableHead>
+                  <TableHead className="font-bold text-xs">Date & Time</TableHead>
+                  <TableHead className="font-bold text-xs">Venue & Organizer</TableHead>
+                  <TableHead className="font-bold text-xs">Category & Status</TableHead>
+                  <TableHead className="font-bold text-xs">Registrations</TableHead>
+                  <TableHead className="font-bold text-xs text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUpcoming.length > 0 ? (
+                  filteredUpcoming.map((event) => {
+                    const category = getEventCategory(event);
+                    const paidRegs = event.event_registrations?.filter((r: any) => r.status === 'paid').length || 0;
+                    const fillRatio = event.capacity ? Math.min((paidRegs / event.capacity) * 100, 100) : 0;
+                    
+                    return (
+                      <TableRow key={event.id} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="font-semibold py-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm text-foreground line-clamp-1">{event.title}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {event.is_pinned && (
+                                <Badge variant="secondary" className="bg-primary/10 text-primary w-fit text-[9px] px-1 py-0 select-none">
+                                  Pinned
+                                </Badge>
+                              )}
+                              <span className="text-[10px] text-muted-foreground font-normal">
+                                Created: {event.created_at ? format(new Date(event.created_at), 'MMM d, yyyy') : '-'}
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">{format(new Date(event.event_date), 'PPP')}</span>
+                            {event.event_time && <span>{event.event_time}</span>}
+                            {event.recurrence_type && event.recurrence_type !== 'none' && (
+                              <Badge variant="outline" className="w-fit text-[9px] px-1 py-0 capitalize bg-primary/5 text-primary border-primary/20">
+                                {event.recurrence_type}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                            <span className="line-clamp-1 text-foreground">{event.location || '-'}</span>
+                            <span className="text-[10px]">Organizer: IIMC Staff</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1.5 w-fit">
+                            <Badge variant="secondary" className="bg-primary/5 text-primary text-[10px] w-fit">
+                              {category}
+                            </Badge>
+                            {getAdminEventStatusBadge(event, paidRegs)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 w-24">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-semibold">{paidRegs}</span>
+                              <span className="text-muted-foreground text-[10px]">/ {event.capacity || '∞'}</span>
+                            </div>
+                            {event.capacity && (
+                              <div className="w-full h-1 bg-primary/15 rounded-full overflow-hidden">
+                                <div className="bg-primary h-full transition-all duration-300" style={{ width: `${fillRatio}%` }} />
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1.5">
+                            {event.recurrence_type && event.recurrence_type !== 'none' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedSchedulerEvent(event)}
+                                className="h-8 px-2.5 text-xs"
+                                title="Manage recurring sessions"
+                              >
+                                <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                                Sessions
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setSelectedEvent(event); setShowRegistrations(true); }}
+                              className="h-8 px-2.5 text-xs"
+                              title="View registered attendees"
+                            >
+                              <UsersRound className="h-3.5 w-3.5 mr-1" />
+                              View
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(event)} title="Edit Event" className="h-8 w-8 p-0">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => duplicateMutation.mutate(event)} title="Duplicate Event" className="h-8 w-8 p-0">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm('Delete this event?')) {
+                                  deleteMutation.mutate(event.id);
+                                }
+                              }}
+                              title="Delete Event"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/5"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-xs">
+                      No upcoming events found matching the criteria.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {/* 2. Past Events Section */}
+      <div className="border border-primary/10 rounded-2xl overflow-hidden bg-background/30 shadow-soft">
+        <button
+          onClick={() => setPastExpanded(!pastExpanded)}
+          className="w-full flex items-center justify-between p-4 bg-background/50 hover:bg-background/80 transition-colors font-bold text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            Past Events Section ({filteredPast.length})
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground font-normal mr-2">Calculated dynamically from event dates</span>
+            {pastExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </button>
+
+        {pastExpanded && (
+          <div className="p-4 pt-0 space-y-3">
+            {loadingPast ? (
+              <p className="text-sm text-muted-foreground animate-pulse py-4">Loading past events...</p>
+            ) : (
+              <div className="rounded-xl border border-primary/5 bg-background/50 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="font-bold text-xs">Title</TableHead>
+                      <TableHead className="font-bold text-xs">Date & Time</TableHead>
+                      <TableHead className="font-bold text-xs">Venue & Organizer</TableHead>
+                      <TableHead className="font-bold text-xs">Category & Status</TableHead>
+                      <TableHead className="font-bold text-xs">Registrations</TableHead>
+                      <TableHead className="font-bold text-xs text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPast.length > 0 ? (
+                      filteredPast.slice(0, visiblePastCount).map((event) => {
+                        const category = getEventCategory(event);
+                        const paidRegs = event.event_registrations?.filter((r: any) => r.status === 'paid').length || 0;
+                        
+                        return (
+                          <TableRow key={event.id} className="hover:bg-muted/30 transition-colors opacity-90">
+                            <TableCell className="font-medium py-3">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm text-foreground/80 line-clamp-1">{event.title}</span>
+                                  <Badge variant="outline" className="bg-neutral-500/10 text-neutral-500 border-neutral-500/20 text-[9px] px-1.5 py-0 select-none">
+                                    Past Event
+                                  </Badge>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">
+                                  Created: {event.created_at ? format(new Date(event.created_at), 'MMM d, yyyy') : '-'}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col text-xs text-muted-foreground">
+                                <span className="font-medium">{format(new Date(event.event_date), 'PPP')}</span>
+                                {event.event_time && <span>{event.event_time}</span>}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col text-xs text-muted-foreground">
+                                <span className="line-clamp-1">{event.location || '-'}</span>
+                                <span className="text-[10px]">Organizer: IIMC Staff</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1.5">
+                                <span className="text-xs text-muted-foreground font-semibold">{category}</span>
+                                <Badge variant="secondary" className="bg-neutral-500/10 text-neutral-500 w-fit text-[9px] px-1 py-0 select-none border-none">
+                                  Archived
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-xs font-semibold">{paidRegs} / {event.capacity || '∞'}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => exportEventRegistrations(event.id, event.title)}
+                                  className="h-8 px-2 text-xs"
+                                  title="Export paid attendees as CSV"
+                                >
+                                  <Download className="h-3.5 w-3.5 mr-1" />
+                                  Export
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { setSelectedEvent(event); setShowRegistrations(true); }}
+                                  className="h-8 px-2 text-xs"
+                                  title="View registrations"
+                                >
+                                  <UsersRound className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(event)} title="Edit Event" className="h-8 w-8 p-0">
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => duplicateMutation.mutate(event)} title="Duplicate Event" className="h-8 w-8 p-0">
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (confirm('Delete this event?')) {
+                                      deleteMutation.mutate(event.id);
+                                    }
+                                  }}
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/5"
+                                  title="Delete Event"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-xs">
+                          No past events found matching the criteria.
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell>{event.location || '-'}</TableCell>
-                <TableCell>LKR {event.price}</TableCell>
-                <TableCell>
-                  {event.recurrence_type && event.recurrence_type !== 'none' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedSchedulerEvent(event)}
-                      className="flex items-center gap-1 text-xs hover:bg-primary/10 hover:text-primary hover:border-primary/30"
-                    >
-                      <CalendarDays className="h-3 w-3" />
-                      Manage
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setSelectedEvent(event); setShowRegistrations(true); }}
-                    className="flex items-center gap-1 text-xs"
-                  >
-                    <UsersRound className="h-3 w-3" />
-                    View
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(event)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                  </TableBody>
+                </Table>
+                
+                {/* Pagination / Lazy Load control for past events */}
+                {filteredPast.length > visiblePastCount && (
+                  <div className="p-3 bg-muted/20 border-t border-primary/5 text-center">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (confirm('Delete this event?')) {
-                          deleteMutation.mutate(event.id);
-                        }
-                      }}
+                      onClick={() => setVisiblePastCount(prev => prev + 10)}
+                      className="text-xs text-primary font-bold hover:bg-primary/5"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Load More Past Events ({filteredPast.length - visiblePastCount} remaining)
                     </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <Dialog open={showDialog} onOpenChange={(open) => { if (!open) resetForm(); }}>
@@ -385,7 +856,6 @@ export function EventsManager() {
   );
 }
 
-// Inline Helper component for managing event sessions
 function InlineSessionScheduler({ event, onClose }: { event: any; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState('');

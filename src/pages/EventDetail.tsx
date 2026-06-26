@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { format } from 'date-fns';
 import { Calendar, MapPin, Users, DollarSign, ArrowLeft, RefreshCw, Heart, Gift } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatEventScheduleLong } from '@/lib/eventUtils';
+import { formatEventScheduleLong, isEventUpcoming } from '@/lib/eventUtils';
 import { SessionDatePicker } from '@/components/SessionDatePicker';
 import { cn } from '@/lib/utils';
 
@@ -259,14 +259,15 @@ export default function EventDetail() {
   }
 
   const isFull = !hasSessions && event.capacity && (registrationCount ?? 0) >= event.capacity;
+  const isEventPast = event ? !isEventUpcoming(event.event_date, event.event_time) : false;
 
   // Compute what price to show in the dialog
   const dialogPrice = hasSessions && selectedSessionIds.length > 0
     ? sessionTotalPrice
     : (event.price ?? 0);
-  const canProceed = isFreeEvent
+  const canProceed = !isEventPast && (isFreeEvent
     ? (!hasSessions || selectedSessionIds.length > 0 || !isRecurring)
-    : ((!hasSessions || selectedSessionIds.length > 0) && dialogPrice > 0);
+    : ((!hasSessions || selectedSessionIds.length > 0) && dialogPrice > 0));
 
   return (
     <div className="min-h-screen py-24 relative overflow-hidden bg-background">
@@ -471,7 +472,12 @@ export default function EventDetail() {
                       </div>
                     )}
                     
-                    {isFull ? (
+                    {isEventPast ? (
+                      <div className="bg-muted border border-border text-muted-foreground text-center p-4 rounded-2xl space-y-1">
+                        <p className="font-bold text-sm">Event Has Passed</p>
+                        <p className="text-xs">Registration is closed for this event.</p>
+                      </div>
+                    ) : isFull ? (
                       <div className="bg-destructive/10 border border-destructive/20 text-destructive text-center p-4 rounded-2xl space-y-1">
                         <p className="font-bold text-sm">Fully Booked</p>
                         <p className="text-xs text-muted-foreground">All {event.capacity} spots have been reserved.</p>
