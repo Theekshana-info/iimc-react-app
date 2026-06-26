@@ -11,7 +11,7 @@ interface TurnstileWidgetProps {
   onVerify: (token: string) => void;
   onExpire?: () => void;
   onError?: () => void;
-  appearance?: 'managed' | 'invisible' | 'interaction-only';
+  appearance?: 'always' | 'execute' | 'interaction-only';
 }
 
 /**
@@ -19,7 +19,7 @@ interface TurnstileWidgetProps {
  * Loads the script dynamically and renders via explicit API.
  */
 const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(
-  ({ onVerify, onExpire, onError, appearance = 'managed' }, ref) => {
+  ({ onVerify, onExpire, onError, appearance = 'always' }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
 
