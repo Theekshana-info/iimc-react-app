@@ -110,9 +110,7 @@ Deno.serve(async (req) => {
     }
     const currency = 'LKR';
 
-    const amountFormatted = resolvedAmount
-      .toLocaleString('en-us', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      .replaceAll(',', '');
+    const amountFormatted = Number(resolvedAmount).toFixed(2);
 
     const hashedSecret = CryptoJS.MD5(merchantSecret).toString().toUpperCase();
     const hashString = merchantId + orderId + amountFormatted + currency + hashedSecret;
