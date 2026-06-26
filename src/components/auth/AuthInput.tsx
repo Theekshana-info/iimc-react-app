@@ -1,8 +1,8 @@
 import React from 'react';
-import { Input, InputProps } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-interface AuthInputProps extends InputProps {
+interface AuthInputProps extends React.ComponentProps<"input"> {
   id: string;
   label: string;
   error?: string;

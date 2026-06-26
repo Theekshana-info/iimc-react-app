@@ -189,7 +189,7 @@ export default function Payment() {
       }
 
       // Build the payment object for the JS SDK
-      const payment: Record<string, any> = {
+      const payment: PayHerePayment = {
         // CRITICAL-2: Environment-controlled sandbox mode
         sandbox: import.meta.env.VITE_PAYHERE_SANDBOX === 'true',
         merchant_id: data.merchant_id,

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
-  label: string;
+  label?: string;
   showStrength?: boolean;
 }
 
@@ -53,7 +53,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
 
     return (
       <div className="space-y-2 w-full">
-        <Label htmlFor={id}>{label}</Label>
+        {label && <Label htmlFor={id}>{label}</Label>}
         <div className="relative">
           <Input
             id={id}
