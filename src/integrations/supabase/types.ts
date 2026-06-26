@@ -880,28 +880,37 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string | null
+          guided_retreats: string | null
           id: string
           image_url: string | null
           name: string
+          quote: string | null
           specialization: string | null
+          specialized_fields: string | null
           user_id: string | null
         }
         Insert: {
           bio?: string | null
           created_at?: string | null
+          guided_retreats?: string | null
           id?: string
           image_url?: string | null
           name: string
+          quote?: string | null
           specialization?: string | null
+          specialized_fields?: string | null
           user_id?: string | null
         }
         Update: {
           bio?: string | null
           created_at?: string | null
+          guided_retreats?: string | null
           id?: string
           image_url?: string | null
           name?: string
+          quote?: string | null
           specialization?: string | null
+          specialized_fields?: string | null
           user_id?: string | null
         }
         Relationships: [

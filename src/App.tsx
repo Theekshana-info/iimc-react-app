@@ -16,6 +16,7 @@ import Contact from "./pages/Contact";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Teachers from "./pages/Teachers";
+import TeacherDetail from "./pages/TeacherDetail";
 import Blog from "./pages/Blog";
 import BlogArticle from "./pages/BlogArticle";
 import Donate from "./pages/Donate";
@@ -62,6 +63,7 @@ const AppLayout = () => {
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/teachers" element={<Teachers />} />
+          <Route path="/teachers/:id" element={<TeacherDetail />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogArticle />} />
           <Route path="/contact" element={<Contact />} />
