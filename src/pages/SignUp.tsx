@@ -15,6 +15,8 @@ import { AuthButton } from '@/components/auth/AuthButton';
 import { CountryPhoneInput } from '@/components/auth/CountryPhoneInput';
 import { GoogleSignInButton, AuthDivider } from '@/components/auth/GoogleSignInButton';
 import { Checkbox } from '@/components/ui/checkbox';
+import TurnstileWidget from '@/components/TurnstileWidget';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
@@ -45,6 +47,7 @@ export default function SignUp() {
   const [phoneError, setPhoneError] = useState('');
   const [googleExistsMessage, setGoogleExistsMessage] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const { turnstileToken, setTurnstileToken, clearTurnstileToken, resetTurnstile, verifyTurnstile, isTurnstileReady, turnstileRef } = useTurnstile();
 
   useEffect(() => {
     if (user) {
@@ -71,6 +74,11 @@ export default function SignUp() {
       return;
     }
 
+    if (!turnstileToken) {
+      toast.error('Please complete the CAPTCHA verification.');
+      return;
+    }
+
     // Validate phone separately
     const localPart = phone.replace(/^\+\d+\s*/, '').replace(/\D/g, '');
     if (!phone || localPart.length < 6) {
@@ -81,6 +89,14 @@ export default function SignUp() {
 
     try {
       setLoading(true);
+
+      // Verify Turnstile token server-side
+      const isHuman = await verifyTurnstile(turnstileToken);
+      if (!isHuman) {
+        toast.error('CAPTCHA verification failed. Please try again.');
+        resetTurnstile();
+        return;
+      }
 
       const redirectUrl = `${window.location.origin}/login`;
 
@@ -100,6 +116,7 @@ export default function SignUp() {
 
       setIsSuccess(true);
       toast.success('Account created successfully!');
+      resetTurnstile();
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('User already registered')) {
@@ -228,12 +245,19 @@ export default function SignUp() {
             </label>
           </div>
 
+          <TurnstileWidget
+            ref={turnstileRef}
+            onVerify={setTurnstileToken}
+            onExpire={clearTurnstileToken}
+            onError={clearTurnstileToken}
+          />
+
           <AuthButton 
             type="submit" 
             loading={loading} 
             loadingText="Creating account..." 
             className="w-full mt-2"
-            disabled={loading || !termsAccepted}
+            disabled={loading || !termsAccepted || !isTurnstileReady}
           >
             Sign Up
           </AuthButton>

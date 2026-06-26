@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { CONTACT_INFO } from '@/lib/constants';
 import { ScrollReveal } from '@/components/ScrollReveal';
+import TurnstileWidget from '@/components/TurnstileWidget';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -23,6 +25,7 @@ export default function Contact() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const { turnstileToken, setTurnstileToken, clearTurnstileToken, resetTurnstile, verifyTurnstile, isTurnstileReady, turnstileRef } = useTurnstile();
 
   const contactEmail = CONTACT_INFO.email;
   const contactPhone = CONTACT_INFO.phone;
@@ -38,7 +41,21 @@ export default function Contact() {
         message,
       });
 
+      if (!turnstileToken) {
+        toast.error('Please complete the CAPTCHA verification.');
+        return;
+      }
+
       setLoading(true);
+
+      // Verify Turnstile token server-side
+      const isHuman = await verifyTurnstile(turnstileToken);
+      if (!isHuman) {
+        toast.error('CAPTCHA verification failed. Please try again.');
+        resetTurnstile();
+        setLoading(false);
+        return;
+      }
 
       const { error } = await supabase.from('messages').insert({
         name: validated.name,
@@ -54,6 +71,7 @@ export default function Contact() {
       setEmail('');
       setSubject('');
       setMessage('');
+      resetTurnstile();
     } catch (error) {
       if (error instanceof z.ZodError) {
         error.errors.forEach((err) => {
@@ -104,7 +122,13 @@ export default function Contact() {
                     <Label htmlFor="message">Message *</Label>
                     <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} rows={5} required />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <TurnstileWidget
+                    ref={turnstileRef}
+                    onVerify={setTurnstileToken}
+                    onExpire={clearTurnstileToken}
+                    onError={clearTurnstileToken}
+                  />
+                  <Button type="submit" className="w-full" disabled={loading || !isTurnstileReady}>
                     {loading ? 'Sending...' : 'Send Message'}
                   </Button>
                 </form>

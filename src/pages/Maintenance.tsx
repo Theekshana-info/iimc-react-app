@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, ShieldAlert, Loader2, Lock, Shield } from 'lucide-react';
 import iimcLogo from '@/assets/iimc-logo.jpg';
+import TurnstileWidget from '@/components/TurnstileWidget';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 export default function Maintenance() {
   const [searchParams] = useSearchParams();
@@ -12,6 +14,7 @@ export default function Maintenance() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { turnstileToken, setTurnstileToken, clearTurnstileToken, resetTurnstile, verifyTurnstile, isTurnstileReady, turnstileRef } = useTurnstile();
 
   const redirectPath = searchParams.get('redirect') || '/';
 
@@ -42,6 +45,20 @@ export default function Maintenance() {
     setError(null);
 
     try {
+      // Verify Turnstile token server-side first
+      if (!turnstileToken) {
+        setError('Please complete the CAPTCHA verification.');
+        setLoading(false);
+        return;
+      }
+
+      const isHuman = await verifyTurnstile(turnstileToken);
+      if (!isHuman) {
+        setError('CAPTCHA verification failed. Please try again.');
+        resetTurnstile();
+        setLoading(false);
+        return;
+      }
       const response = await fetch('/api/maintenance/login', {
         method: 'POST',
         headers: {
@@ -57,6 +74,7 @@ export default function Maintenance() {
       }
 
       window.location.href = redirectPath;
+      resetTurnstile();
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
@@ -145,10 +163,17 @@ export default function Maintenance() {
                 </div>
               </div>
 
+              <TurnstileWidget
+                ref={turnstileRef}
+                onVerify={setTurnstileToken}
+                onExpire={clearTurnstileToken}
+                onError={clearTurnstileToken}
+              />
+
               {/* Solid Indigo Action Button */}
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isTurnstileReady}
                 className="w-full h-11 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-500 text-white active:scale-[0.99] transition-all duration-200 border-none !shadow-none hover:!shadow-none focus:!shadow-none"
               >
                 {loading ? (

@@ -11,6 +11,8 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthInput } from '@/components/auth/AuthInput';
 import { AuthButton } from '@/components/auth/AuthButton';
+import TurnstileWidget from '@/components/TurnstileWidget';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -24,6 +26,7 @@ export default function ForgotPassword() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { turnstileToken, setTurnstileToken, clearTurnstileToken, resetTurnstile, verifyTurnstile, isTurnstileReady, turnstileRef } = useTurnstile();
 
   useEffect(() => {
     // If already logged in, redirect away
@@ -42,8 +45,21 @@ export default function ForgotPassword() {
   });
 
   const onSubmit = async (data: ForgotPasswordValues) => {
+    if (!turnstileToken) {
+      toast.error('Please complete the CAPTCHA verification.');
+      return;
+    }
+
     try {
       setLoading(true);
+
+      // Verify Turnstile token server-side
+      const isHuman = await verifyTurnstile(turnstileToken);
+      if (!isHuman) {
+        toast.error('CAPTCHA verification failed. Please try again.');
+        resetTurnstile();
+        return;
+      }
 
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -58,6 +74,7 @@ export default function ForgotPassword() {
       // Always show success to prevent email enumeration
       setIsSuccess(true);
       toast.success('Reset link sent if the email exists.');
+      resetTurnstile();
     } catch (error) {
       console.error(error);
       toast.error('An unexpected error occurred. Please try again.');
@@ -102,7 +119,14 @@ export default function ForgotPassword() {
             {...register('email')}
           />
 
-          <AuthButton type="submit" loading={loading} loadingText="Sending link..." className="mt-4">
+          <TurnstileWidget
+            ref={turnstileRef}
+            onVerify={setTurnstileToken}
+            onExpire={clearTurnstileToken}
+            onError={clearTurnstileToken}
+          />
+
+          <AuthButton type="submit" loading={loading} loadingText="Sending link..." className="mt-4" disabled={loading || !isTurnstileReady}>
             Send Reset Link
           </AuthButton>
 

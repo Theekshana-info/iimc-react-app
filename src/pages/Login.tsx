@@ -13,6 +13,8 @@ import { AuthInput } from '@/components/auth/AuthInput';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { GoogleSignInButton, AuthDivider } from '@/components/auth/GoogleSignInButton';
+import TurnstileWidget from '@/components/TurnstileWidget';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -27,6 +29,7 @@ export default function Login() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [googleOnlyMessage, setGoogleOnlyMessage] = useState<string | null>(null);
+  const { turnstileToken, setTurnstileToken, clearTurnstileToken, resetTurnstile, verifyTurnstile, isTurnstileReady, turnstileRef } = useTurnstile();
 
   useEffect(() => {
     if (user) {
@@ -47,8 +50,21 @@ export default function Login() {
   const onSubmit = async (data: SignInValues) => {
     setGoogleOnlyMessage(null);
 
+    if (!turnstileToken) {
+      toast.error('Please complete the CAPTCHA verification.');
+      return;
+    }
+
     try {
       setLoading(true);
+
+      // Verify Turnstile token server-side
+      const isHuman = await verifyTurnstile(turnstileToken);
+      if (!isHuman) {
+        toast.error('CAPTCHA verification failed. Please try again.');
+        resetTurnstile();
+        return;
+      }
 
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -58,6 +74,7 @@ export default function Login() {
       if (error) throw error;
 
       toast.success('Logged in successfully');
+      resetTurnstile();
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('Invalid login credentials')) {
@@ -140,7 +157,14 @@ export default function Login() {
             </div>
           </div>
 
-          <AuthButton type="submit" loading={loading} loadingText="Signing in..." className="mt-4">
+          <TurnstileWidget
+            ref={turnstileRef}
+            onVerify={setTurnstileToken}
+            onExpire={clearTurnstileToken}
+            onError={clearTurnstileToken}
+          />
+
+          <AuthButton type="submit" loading={loading} loadingText="Signing in..." className="mt-4" disabled={loading || !isTurnstileReady}>
             Sign In
           </AuthButton>
 
