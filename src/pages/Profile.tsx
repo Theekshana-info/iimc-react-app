@@ -15,10 +15,48 @@ import { PasswordInput } from '@/components/auth/PasswordInput';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Calendar, Heart, Loader2, Pencil, Shield, User, Check, Mail, CreditCard } from 'lucide-react';
+import { 
+  Calendar, 
+  Heart, 
+  Loader2, 
+  Pencil, 
+  Shield, 
+  User, 
+  Check, 
+  Mail, 
+  CreditCard,
+  ChevronRight,
+  ChevronLeft,
+  Lock,
+  Globe,
+  Moon,
+  Sun
+} from 'lucide-react';
 import { UserRegistrations, UserSubscriptions } from '@/components/profile/UserActivities';
+import { useTheme } from '@/context/ThemeContext';
 
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+
+interface UserProfile {
+  id: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  location?: string | null;
+  bio?: string | null;
+  auth_methods?: string[];
+  has_password?: boolean;
+}
+
+interface Donation {
+  id: string;
+  amount: number;
+  currency?: string;
+  created_at?: string;
+  payment_type?: string;
+  status?: string;
+}
 
 type SectionKey = 'profile' | 'registrations' | 'subscriptions' | 'donations' | 'security';
 type EditableField = 'fullName' | 'phone' | 'dateOfBirth' | 'location' | 'bio';
@@ -26,13 +64,14 @@ type EditableField = 'fullName' | 'phone' | 'dateOfBirth' | 'location' | 'bio';
 export default function Profile() {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [donations, setDonations] = useState<any[]>([]);
+  const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [donations, setDonations] = useState<Donation[]>([]);
 
-  const [activeSection, setActiveSection] = useState<SectionKey>('profile');
+  const [activeSection, setActiveSection] = useState<SectionKey | 'menu'>('menu');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [editingField, setEditingField] = useState<EditableField | null>(null);
   const [savingField, setSavingField] = useState<EditableField | null>(null);
@@ -186,7 +225,7 @@ export default function Profile() {
 
       if (updateError) throw updateError;
 
-      setProfile((prev: any) => prev ? { ...prev, avatar_url: publicData.publicUrl } : prev);
+      setProfile((prev) => prev ? { ...prev, avatar_url: publicData.publicUrl } : null);
       toast.success('Avatar updated');
     } catch (error) {
       if (error instanceof Error) {
@@ -283,7 +322,7 @@ export default function Profile() {
         .eq('id', user.id);
       if (error) throw error;
 
-      setProfile((prev: any) => prev ? { ...prev, ...updates } : prev);
+      setProfile((prev) => prev ? { ...prev, ...updates } : null);
       setEditingField(null);
       toast.success('Changes saved');
     } catch (error) {
@@ -364,75 +403,165 @@ export default function Profile() {
     ? format(new Date(dateOfBirth), 'PPP')
     : 'Not set';
 
-  const navItems = [
-    { key: 'profile', label: 'Profile', icon: User },
-    { key: 'registrations', label: 'Registrations', icon: Calendar },
-    { key: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
-    { key: 'donations', label: 'Donations', icon: Heart },
-    { key: 'security', label: 'Security', icon: Shield },
-  ] as const;
+  if (activeSection === 'menu') {
+    return (
+      <div className="min-h-screen py-24 gradient-hero flex items-center justify-center">
+        <div className="container px-4 max-w-md md:max-w-2xl mx-auto space-y-6">
+          <h1 className="text-2xl font-bold text-center text-foreground">Profile</h1>
 
-  return (
-    <div className="min-h-screen py-20 gradient-hero">
-      <div className="container px-4 max-w-4xl space-y-6">
-        {/* Mobile View: Select Dropdown */}
-        <div className="md:hidden">
-          <Select value={activeSection} onValueChange={(value) => setActiveSection(value as SectionKey)}>
-            <SelectTrigger className="w-full h-12 rounded-2xl bg-card border-2 border-primary px-4 shadow-sm focus:ring-0 focus:ring-offset-0 focus:outline-none flex items-center justify-between text-primary font-semibold [&_svg]:text-primary [&_svg]:opacity-100">
-              <div className="flex items-center gap-2.5">
-                {(() => {
-                  const activeItem = navItems.find((item) => item.key === activeSection);
-                  if (activeItem) {
-                    const Icon = activeItem.icon;
-                    return <Icon className="h-5 w-5 text-primary shrink-0" />;
-                  }
-                  return null;
-                })()}
-                <SelectValue placeholder="Select Section" />
+          {/* User Card */}
+          <div className="flex items-center gap-4 p-5 rounded-3xl bg-card border border-primary/5 shadow-soft">
+            <div className="relative group cursor-pointer shrink-0" onClick={handleAvatarClick}>
+              <Avatar className="h-16 w-16 border-2 border-primary/10 group-hover:border-primary/30 transition-colors">
+                <AvatarImage src={profile?.avatar_url} />
+                <AvatarFallback>
+                  <User className="h-6 w-6 text-muted-foreground" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground p-1.5 rounded-full shadow-md">
+                <Pencil className="h-3 w-3" />
               </div>
-            </SelectTrigger>
-            <SelectContent>
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SelectItem key={item.key} value={item.key}>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                      <span>{item.label}</span>
-                    </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold truncate leading-tight">{displayName}</h2>
+              <p className="text-xs text-muted-foreground truncate">{displayEmail}</p>
+            </div>
+          </div>
 
-        {/* Desktop View: Horizontal Tab Bar */}
-        <div className="hidden md:block shadow-soft rounded-3xl p-3 bg-card border border-transparent">
-          <div className="flex gap-4 w-full">
-            {navItems.map((item) => {
-              const isActive = activeSection === item.key;
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setActiveSection(item.key)}
-                  className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-smooth flex-1 ${
-                    isActive
-                      ? 'text-primary bg-primary/10'
-                      : 'text-muted-foreground hover:text-primary hover:bg-muted/50'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+          {/* Account Category */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider px-2">Account</h3>
+            <div className="bg-card border border-primary/5 rounded-3xl shadow-soft divide-y divide-primary/5 overflow-hidden">
+              <button
+                onClick={() => setActiveSection('profile')}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-primary/70" />
+                  <span className="text-sm font-semibold text-foreground">Manage Profile</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+              </button>
+
+              <button
+                onClick={() => setActiveSection('security')}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="h-5 w-5 text-primary/70" />
+                  <span className="text-sm font-semibold text-foreground">Password & Security</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+              </button>
+            </div>
+          </div>
+
+          {/* Activities & History Category */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider px-2">Activities & History</h3>
+            <div className="bg-card border border-primary/5 rounded-3xl shadow-soft divide-y divide-primary/5 overflow-hidden">
+              <button
+                onClick={() => setActiveSection('registrations')}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-primary/70" />
+                  <span className="text-sm font-semibold text-foreground">Event Registrations</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+              </button>
+
+              <button
+                onClick={() => setActiveSection('subscriptions')}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-primary/70" />
+                  <span className="text-sm font-semibold text-foreground">My Subscriptions</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+              </button>
+
+              <button
+                onClick={() => setActiveSection('donations')}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Heart className="h-5 w-5 text-primary/70" />
+                  <span className="text-sm font-semibold text-foreground">Donation History</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+              </button>
+            </div>
+          </div>
+
+          {/* Preferences Category */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-muted-foreground/60 uppercase tracking-wider px-2">Preferences</h3>
+            <div className="bg-card border border-primary/5 rounded-3xl shadow-soft divide-y divide-primary/5 overflow-hidden">
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  {theme === 'light' ? (
+                    <Moon className="h-5 w-5 text-primary/70" />
+                  ) : (
+                    <Sun className="h-5 w-5 text-primary/70" />
+                  )}
+                  <span className="text-sm font-semibold text-foreground">Theme</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="capitalize">{theme}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => toast.info('Default language is set to English.')}
+                className="w-full flex items-center justify-between p-4 hover:bg-primary/[0.02] active:bg-primary/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="h-5 w-5 text-primary/70" />
+                  <span className="text-sm font-semibold text-foreground">Language</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>English</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
+      </div>
+    );
+  }
 
+  return (
+    <div className="min-h-screen py-24 gradient-hero">
+      <div className="container px-4 max-w-4xl mx-auto space-y-6">
         <div className="shadow-soft rounded-3xl p-6 md:p-8 bg-card border border-transparent overflow-hidden">
+          <div className="flex items-center gap-4 border-b border-primary/5 pb-4 mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => setActiveSection('menu')}
+              className="group hover:bg-primary/5 text-muted-foreground hover:text-primary rounded-xl pl-2.5 pr-4 h-10 font-medium shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1.5 transition-transform group-hover:-translate-x-0.5" />
+              Back
+            </Button>
+            <h1 className="text-lg font-bold capitalize text-foreground">
+              {activeSection === 'security' ? 'Password & Security' : activeSection === 'profile' ? 'Manage Profile' : activeSection === 'registrations' ? 'Event Registrations' : activeSection === 'subscriptions' ? 'My Subscriptions' : activeSection === 'donations' ? 'Donation History' : activeSection}
+            </h1>
+          </div>
+
           <AnimatePresence mode="wait">
             <motion.div
               key={activeSection}
