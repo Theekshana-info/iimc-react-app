@@ -68,7 +68,7 @@ export default async function middleware(request: Request) {
 
   // Exclude static assets, Next/Vercel paths, and API routes from the auth block
   const isAllowedPath =
-    url.pathname.startsWith('/api/maintenance/') ||
+    url.pathname.startsWith('/api/') ||
     url.pathname === '/maintenance' ||
     url.pathname.includes('.') || // matches files like index.js, style.css, logo.jpg
     url.pathname.startsWith('/_next') ||
