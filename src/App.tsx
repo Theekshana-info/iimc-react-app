@@ -53,13 +53,14 @@ const AppLayout = () => {
     "/profile",
     "/payment"
   ].includes(location.pathname);
+  const showMobileNavbar = !hideChrome && !isAuthPage;
 
   return (
     <>
       <ScrollToTop />
       {!hideChrome && <Header isAuthPage={isAuthPage} />}
       {!hideChrome && <EmailVerificationBanner />}
-      <main className="relative z-10 pb-16 lg:pb-0">
+      <main className={`relative z-10 ${showMobileNavbar ? 'pb-16' : ''} lg:pb-0`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
