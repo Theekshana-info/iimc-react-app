@@ -100,20 +100,24 @@ export default function Profile() {
   const [prevSection, setPrevSection] = useState<SectionKey | 'menu'>(activeSection);
   const [direction, setDirection] = useState(1);
 
-  if (activeSection !== prevSection) {
-    const getDepth = (sec: string) => (sec === 'menu' ? 0 : 1);
-    const prevDepth = getDepth(prevSection);
-    const currentDepth = getDepth(activeSection);
-    
-    let dir = 1;
-    if (currentDepth < prevDepth) {
-      dir = -1;
-    } else if (currentDepth === prevDepth) {
-      dir = 1;
+  // Sync direction state when section changes — using useEffect to avoid
+  // state mutations during the render phase (React anti-pattern)
+  useEffect(() => {
+    if (activeSection !== prevSection) {
+      const getDepth = (sec: string) => (sec === 'menu' ? 0 : 1);
+      const prevDepth = getDepth(prevSection);
+      const currentDepth = getDepth(activeSection);
+      
+      let dir = 1;
+      if (currentDepth < prevDepth) {
+        dir = -1;
+      } else if (currentDepth === prevDepth) {
+        dir = 1;
+      }
+      setDirection(dir);
+      setPrevSection(activeSection);
     }
-    setDirection(dir);
-    setPrevSection(activeSection);
-  }
+  }, [activeSection, prevSection]);
 
   const setActiveSection = (section: SectionKey | 'menu') => {
     if (section === 'menu') {

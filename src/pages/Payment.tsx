@@ -129,8 +129,6 @@ export default function Payment() {
         },
       });
 
-      console.log('create_payhere_order response', { data, error });
-
       if (error) throw error;
       if (!data) throw new Error('No data received from edge function');
 

@@ -48,7 +48,7 @@ function getEventCategory(event: { title: string; description?: string | null })
   return 'Workshops'; // default fallback
 }
 
-type EventStatus = 'Upcoming' | 'Closing Soon' | 'Sold Out' | 'Cancelled';
+type EventStatus = 'Upcoming' | 'Closing Soon' | 'Cancelled';
 
 function getEventStatus(event: {
   event_date: string;
@@ -58,10 +58,6 @@ function getEventStatus(event: {
   const eventDateObj = new Date(event.event_date);
   const diffTime = eventDateObj.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (event.capacity && event.capacity <= 5) {
-    return 'Sold Out';
-  }
   
   if (diffDays > 0 && diffDays <= 3) {
     return 'Closing Soon';
@@ -227,7 +223,6 @@ export default function Home() {
                             "text-[8px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border select-none",
                             status === 'Upcoming' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
                             status === 'Closing Soon' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-                            status === 'Sold Out' && "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border-neutral-500/20",
                             status === 'Cancelled' && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                           )}>
                             {status}

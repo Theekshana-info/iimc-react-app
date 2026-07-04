@@ -55,6 +55,16 @@ All colors MUST be HSL.
 
     --transition-smooth: all 0.3s ease;
     --transition-bounce: all 0.3s ease;
+
+    /* Sidebar variables */
+    --sidebar-background: 212 45% 92%;
+    --sidebar-foreground: 212 40% 25%;
+    --sidebar-primary: 212 80% 45%;
+    --sidebar-primary-foreground: 212 45% 92%;
+    --sidebar-accent: 212 45% 88%;
+    --sidebar-accent-foreground: 212 80% 45%;
+    --sidebar-border: 212 45% 88%;
+    --sidebar-ring: 212 80% 45%;
   }
 
   .dark {
@@ -99,6 +109,16 @@ All colors MUST be HSL.
     --gradient-card: hsl(214 25% 19%);
     --shadow-soft: var(--shadow-raised);
     --shadow-glow: var(--shadow-raised);
+
+    /* Sidebar variables - Dark */
+    --sidebar-background: 214 25% 19%;
+    --sidebar-foreground: 214 15% 85%;
+    --sidebar-primary: 212 80% 65%;
+    --sidebar-primary-foreground: 214 25% 19%;
+    --sidebar-accent: 214 25% 24%;
+    --sidebar-accent-foreground: 212 80% 65%;
+    --sidebar-border: 214 25% 24%;
+    --sidebar-ring: 212 80% 65%;
   }
 }
 

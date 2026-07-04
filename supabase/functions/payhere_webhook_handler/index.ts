@@ -139,39 +139,19 @@ Deno.serve(async (req) => {
       console.log('Payment attempt logged:', { status: attemptStatus, paymentType });
     }
 
-    // ─── Create payment record (for completed/successful payments) ───
+    // ─── Process successful payments ───
+    // IMPORTANT: Registration/donation/subscription actions happen BEFORE
+    // the payment record is committed. This prevents data inconsistency where
+    // a payment is recorded but the user is not registered.
     if (attemptStatus === 'success') {
-      // HIGH-3: UPSERT on transaction_id to prevent duplicate records from webhook replays
-      const { data: paymentData, error: paymentError } = await supabaseAdmin
-        .from('payments')
-        .upsert(
-          {
-            transaction_id: paymentId,
-            user_id: userId,
-            amount: parseFloat(payhereAmount),
-            currency: payhereCurrency,
-            status: 'completed',
-            payment_type: paymentType,
-            related_id: eventId || donationId || subscriptionId,
-            related_type: paymentType,
-            payment_gateway: 'payhere',
-          },
-          { onConflict: 'transaction_id', ignoreDuplicates: false }
-        )
-        .select()
-        .single();
+      let paymentRelatedId = eventId || donationId || subscriptionId;
 
-      if (paymentError) {
-        console.error('Error upserting payment:', paymentError);
-        return new Response('ERROR', { status: 500 });
-      }
-
-      console.log('Payment record upserted:', { id: paymentData.id });
-
-      // ─── SUCCESS: Event Registration ───
+      // ─── SUCCESS: Event Registration (process BEFORE payment record) ───
       if (paymentType === 'event_registration' && eventId && userId) {
         if (sessionIds.length > 0) {
-          // Multi-session registration: register for each session atomically
+          // Multi-session registration: register all sessions atomically.
+          // Track failures to avoid partial registration.
+          const registrationErrors: { sessionId: string; error: string }[] = [];
           for (const sessionId of sessionIds) {
             const { error: registrationError } = await supabaseAdmin
               .rpc('create_paid_registration', {
@@ -181,11 +161,37 @@ Deno.serve(async (req) => {
               });
 
             if (registrationError) {
-              console.error(`Error registering for session ${sessionId}:`, registrationError);
-              // Continue with other sessions — don't fail the entire batch
+              registrationErrors.push({ sessionId, error: registrationError.message });
             } else {
               console.log(`Session registration created: ${sessionId}`);
             }
+          }
+
+          // If any session registrations failed, rollback all successful ones
+          if (registrationErrors.length > 0) {
+            console.error('Multi-session registration had failures:', registrationErrors);
+            // Attempt to rollback successful registrations
+            const succeededIds = sessionIds.filter(
+              sid => !registrationErrors.find(r => r.sessionId === sid)
+            );
+            for (const sid of succeededIds) {
+              await supabaseAdmin
+                .from('event_registrations')
+                .delete()
+                .eq('event_id', eventId)
+                .eq('user_id', userId)
+                .eq('session_id', sid);
+              console.log(`Rolled back session registration: ${sid}`);
+            }
+            // Log a payment attempt with the failure info
+            await supabaseAdmin
+              .from('payment_attempts')
+              .update({
+                status: 'failed',
+                failure_reason: `Registration failed for sessions: ${registrationErrors.map(r => r.sessionId).join(',')}`
+              })
+              .eq('payhere_order_id', paymentId || orderId);
+            return new Response('REGISTRATION_FAILED', { status: 409 });
           }
         } else {
           // Single (non-session) registration
@@ -197,6 +203,14 @@ Deno.serve(async (req) => {
 
           if (registrationError) {
             console.error('Error creating registration via RPC:', registrationError);
+            // Log the failure but don't record a completed payment
+            await supabaseAdmin
+              .from('payment_attempts')
+              .update({
+                status: 'failed',
+                failure_reason: `Registration failed: ${registrationError.message}`
+              })
+              .eq('payhere_order_id', paymentId || orderId);
             return new Response('CAPACITY_FULL', { status: 409 });
           } else {
             console.log('Event registration created via RPC for event:', eventId);
@@ -204,21 +218,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ─── SUCCESS: Donation ───
+      // ─── SUCCESS: Donation (process BEFORE payment record) ───
       if (paymentType === 'donation' && donationId) {
         const { error: donationError } = await supabaseAdmin
           .from('donations')
-          .update({ status: 'completed', payment_id: paymentData.id })
+          .update({ status: 'completed' })
           .eq('id', donationId);
 
         if (donationError) {
           console.error('Error updating donation:', donationError);
+          await supabaseAdmin
+            .from('payment_attempts')
+            .update({
+              status: 'failed',
+              failure_reason: `Donation update failed: ${donationError.message}`
+            })
+            .eq('payhere_order_id', paymentId || orderId);
+          return new Response('DONATION_UPDATE_FAILED', { status: 500 });
         } else {
           console.log('Donation marked as completed:', donationId);
         }
       }
 
-      // ─── SUCCESS: Subscription ───
+      // ─── SUCCESS: Subscription (process BEFORE payment record) ───
       if (paymentType === 'subscription' && subscriptionId) {
         const nextChargeDate = new Date();
         nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
@@ -236,6 +258,14 @@ Deno.serve(async (req) => {
 
         if (subError) {
           console.error('Error activating subscription:', subError);
+          await supabaseAdmin
+            .from('payment_attempts')
+            .update({
+              status: 'failed',
+              failure_reason: `Subscription activation failed: ${subError.message}`
+            })
+            .eq('payhere_order_id', paymentId || orderId);
+          return new Response('SUBSCRIPTION_ACTIVATION_FAILED', { status: 500 });
         } else {
           console.log('Subscription activated:', subscriptionId);
         }
@@ -250,6 +280,44 @@ Deno.serve(async (req) => {
             gateway_tx_id: paymentId,
           });
       }
+
+      // ─── NOW create payment record (after all business logic succeeded) ───
+      // HIGH-3: UPSERT on transaction_id to prevent duplicate records from webhook replays
+      const { data: paymentData, error: paymentError } = await supabaseAdmin
+        .from('payments')
+        .upsert(
+          {
+            transaction_id: paymentId,
+            user_id: userId,
+            amount: parseFloat(payhereAmount),
+            currency: payhereCurrency,
+            status: 'completed',
+            payment_type: paymentType,
+            related_id: paymentRelatedId,
+            related_type: paymentType,
+            payment_gateway: 'payhere',
+          },
+          { onConflict: 'transaction_id', ignoreDuplicates: false }
+        )
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error upserting payment:', paymentError);
+        // Payment record creation failed but the business logic (registration/donation/subscription)
+        // succeeded. This is a partial failure — alert for manual reconciliation.
+        return new Response('ERROR', { status: 500 });
+      }
+
+      // Link payment_id to donation record (needs paymentData.id which is only available now)
+      if (paymentType === 'donation' && donationId) {
+        await supabaseAdmin
+          .from('donations')
+          .update({ payment_id: paymentData.id })
+          .eq('id', donationId);
+      }
+
+      console.log('Payment record upserted:', { id: paymentData.id });
     }
 
     // ─── Handle subscription renewal failures ───

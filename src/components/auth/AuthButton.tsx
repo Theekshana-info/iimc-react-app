@@ -16,9 +16,9 @@ export const AuthButton = ({
 }: AuthButtonProps) => {
   return (
     <Button 
+      {...props}
       className={`w-full ${className || ''}`} 
       disabled={loading || props.disabled}
-      {...props}
     >
       {loading ? (
         <>

@@ -44,7 +44,11 @@ export function formatEventSchedule(event: {
   }
 
   // Default: one-time event
-  const datePart = format(new Date(event.event_date), 'PPP');
+  const eventDate = new Date(event.event_date);
+  if (isNaN(eventDate.getTime())) {
+    return `Invalid date${timePart}`;
+  }
+  const datePart = format(eventDate, 'PPP');
   return `${datePart}${timePart}`;
 }
 
@@ -73,7 +77,11 @@ export function formatEventScheduleLong(event: {
     return days ? `Every ${days}${timePart}` : `Weekly${timePart}`;
   }
 
-  const datePart = format(new Date(event.event_date), 'PPP');
+  const eventDate = new Date(event.event_date);
+  if (isNaN(eventDate.getTime())) {
+    return `Invalid date${timePart}`;
+  }
+  const datePart = format(eventDate, 'PPP');
   return `${datePart}${timePart}`;
 }
 
@@ -82,21 +90,31 @@ export function formatEventScheduleLong(event: {
  * An event is considered upcoming when:
  * - If eventTimeStr (e.g. "18:30") is present, combined date and time is >= now.
  * - If eventTimeStr is absent, date-only midnight comparison is >= today local midnight.
+ * 
+ * Uses local date methods consistently since event dates are stored as date-only
+ * strings (YYYY-MM-DD) without timezone, and comparison is against the user's local time.
  */
 export function isEventUpcoming(eventDateStr: string, eventTimeStr?: string | null): boolean {
   const now = new Date();
   const eventDateObj = new Date(eventDateStr);
-  
-  // Extract UTC date components as stored by the system
-  const year = eventDateObj.getUTCFullYear();
-  const month = eventDateObj.getUTCMonth();
-  const date = eventDateObj.getUTCDate();
-  
+
+  // Guard against invalid dates
+  if (isNaN(eventDateObj.getTime())) {
+    return false;
+  }
+
+  // Use local date components consistently to avoid UTC/local timezone mismatch
+  const year = eventDateObj.getFullYear();
+  const month = eventDateObj.getMonth();
+  const date = eventDateObj.getDate();
+
   if (eventTimeStr) {
     // Parse time string e.g. "18:30" or "18:30:00"
-    const [h, m] = eventTimeStr.split(':').map(Number);
+    const [hStr, mStr] = eventTimeStr.split(':');
+    const h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
     // Construct local date-time representing the event's start
-    const combinedEventDate = new Date(year, month, date, h, m || 0, 0, 0);
+    const combinedEventDate = new Date(year, month, date, h, m, 0, 0);
     return combinedEventDate >= now;
   } else {
     // Midnight-to-midnight local date comparison

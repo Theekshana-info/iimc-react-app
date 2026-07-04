@@ -126,7 +126,6 @@ export default function Donate() {
         });
       }
     } catch (error) {
-      console.error('Error creating donation:', error);
       toast.error('Failed to process donation');
     }
   };
