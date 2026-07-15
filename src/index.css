@@ -500,4 +500,221 @@ All colors MUST be HSL.
     right: 0;
     background: linear-gradient(to left, hsl(var(--background)) 0%, transparent 100%);
   }
+
+  /* ══════════════════════════════════════════════
+     Article Prose — Editorial Typography System
+     ══════════════════════════════════════════════ */
+
+  /* Reading progress bar */
+  .reading-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: hsl(var(--primary));
+    z-index: 9999;
+    transition: width 50ms linear;
+    will-change: width;
+  }
+
+  /* Article prose container */
+  .article-prose {
+    font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    font-size: 1.1875rem;
+    line-height: 1.85;
+    color: hsl(var(--foreground) / 0.85);
+    letter-spacing: 0.01em;
+  }
+
+  .article-prose p {
+    margin-bottom: 1.75em;
+  }
+
+  /* Heading hierarchy — sans-serif for contrast */
+  .article-prose h1,
+  .article-prose h2,
+  .article-prose h3,
+  .article-prose h4 {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    color: hsl(var(--foreground));
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  .article-prose h2 {
+    font-size: 1.625rem;
+    margin-top: 3em;
+    margin-bottom: 1em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid hsl(var(--foreground) / 0.08);
+  }
+
+  .article-prose h3 {
+    font-size: 1.3125rem;
+    margin-top: 2.25em;
+    margin-bottom: 0.75em;
+  }
+
+  .article-prose h4 {
+    font-size: 1.125rem;
+    margin-top: 1.75em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+  }
+
+  /* Links */
+  .article-prose a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: hsl(var(--primary) / 0.3);
+    transition: text-decoration-color 200ms;
+  }
+
+  .article-prose a:hover {
+    text-decoration-color: hsl(var(--primary));
+  }
+
+  /* Lists */
+  .article-prose ul,
+  .article-prose ol {
+    margin-bottom: 1.75em;
+    padding-left: 1.5em;
+  }
+
+  .article-prose li {
+    margin-bottom: 0.5em;
+  }
+
+  .article-prose ul li {
+    list-style-type: disc;
+  }
+
+  .article-prose ol li {
+    list-style-type: decimal;
+  }
+
+  /* Blockquote — editorial style */
+  .article-prose blockquote {
+    border-left: 3px solid hsl(var(--primary) / 0.4);
+    padding: 1em 1.5em;
+    margin: 2em 0;
+    font-style: italic;
+    color: hsl(var(--foreground) / 0.7);
+    background: hsl(var(--foreground) / 0.02);
+    border-radius: 0 8px 8px 0;
+  }
+
+  .article-prose blockquote p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Code blocks */
+  .article-prose pre {
+    background: hsl(var(--foreground) / 0.05);
+    border: 1px solid hsl(var(--foreground) / 0.08);
+    border-radius: 8px;
+    padding: 1.25em 1.5em;
+    overflow-x: auto;
+    margin: 2em 0;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+  }
+
+  .article-prose code {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.85em;
+    background: hsl(var(--foreground) / 0.06);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+
+  .article-prose pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+  }
+
+  /* Images inside articles */
+  .article-prose img {
+    border-radius: 10px;
+    margin: 2em auto;
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Horizontal rule */
+  .article-prose hr {
+    border: none;
+    height: 1px;
+    background: hsl(var(--foreground) / 0.08);
+    margin: 3em 0;
+  }
+
+  /* Tables */
+  .article-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2em 0;
+    font-size: 0.9375rem;
+  }
+
+  .article-prose th,
+  .article-prose td {
+    border: 1px solid hsl(var(--foreground) / 0.1);
+    padding: 0.75em 1em;
+    text-align: left;
+  }
+
+  .article-prose th {
+    background: hsl(var(--foreground) / 0.04);
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Strong / emphasis */
+  .article-prose strong {
+    font-weight: 700;
+    color: hsl(var(--foreground));
+  }
+
+  .article-prose em {
+    font-style: italic;
+  }
+
+  /* ── Table of Contents ── */
+  .toc-link {
+    display: block;
+    padding: 6px 0 6px 16px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+    border-left: 2px solid transparent;
+    transition: color 200ms, border-color 200ms;
+    text-decoration: none;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+
+  .toc-link:hover {
+    color: hsl(var(--foreground));
+  }
+
+  .toc-link.active {
+    color: hsl(var(--primary));
+    border-left-color: hsl(var(--primary));
+    font-weight: 600;
+  }
+
+  .toc-link-h3 {
+    padding-left: 32px;
+    font-size: 0.75rem;
+  }
 }
