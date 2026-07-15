@@ -86,7 +86,7 @@ export default function Home() {
 
       // Client-side timezone and time-aware upcoming classification
       const filtered = (data || []).filter(e => isEventUpcoming(e.event_date, e.event_time));
-      return filtered.slice(0, 3);
+      return filtered.slice(0, 4);
     },
   });
 
@@ -183,7 +183,14 @@ export default function Home() {
                 .trim();
               
               return (
-                <ScrollReveal key={event.id} delay={index * 100} className="w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)] flex flex-col">
+                <ScrollReveal
+                  key={event.id}
+                  delay={index * 100}
+                  className={cn(
+                    "w-[calc(50%-6px)] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)] flex flex-col",
+                    index >= 2 && "hidden sm:flex"
+                  )}
+                >
                   <div
                     className="group relative flex flex-col overflow-hidden rounded-2xl bg-card text-card-foreground shadow-soft border border-primary/5 h-[340px] sm:h-[410px] hover:shadow-glow transition-all duration-300 ease-out hover:-translate-y-1.5 w-full text-left"
                   >
