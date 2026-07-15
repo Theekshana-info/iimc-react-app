@@ -60,7 +60,7 @@ const AppLayout = () => {
       <ScrollToTop />
       {!hideChrome && <Header isAuthPage={isAuthPage} />}
       {!hideChrome && <EmailVerificationBanner />}
-      <main className={`relative z-10 ${showMobileNavbar ? 'pb-16' : ''} lg:pb-0`}>
+      <main className={`relative z-10 ${showMobileNavbar ? 'pb-16' : ''} lg:pb-0 ${location.pathname !== '/' ? 'pt-24 lg:pt-28' : ''}`}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
