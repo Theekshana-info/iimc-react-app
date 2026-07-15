@@ -8,7 +8,6 @@ import {
   MapPin, 
   Users, 
   RefreshCw, 
-  ArrowUpDown, 
   Clock, 
   Inbox,
   DollarSign,
@@ -16,13 +15,6 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { formatEventSchedule, isEventUpcoming } from '@/lib/eventUtils';
@@ -210,20 +202,8 @@ export default function Events() {
       return 0;
     });
 
-  const clearFilters = () => {
-    setCategoryFilter('all');
-    setDateFilter('all');
-    setTypeFilter('all');
-    setSortBy('soonest');
-  };
-
   // Paged events
   const pagedEvents = filteredEvents.slice(0, visibleCount);
-
-  // Statistics calculation
-  const totalEventsCount = events?.length || 0;
-  const categoriesCount = new Set(events?.map(e => getEventCategory(e))).size || 6;
-  const attendeesCount = events?.reduce((sum, e) => sum + (e.capacity || 25), 0) || 500;
 
   return (
     <div className="min-h-screen py-16 gradient-hero bg-background/50 text-foreground transition-colors duration-300">
@@ -243,92 +223,6 @@ export default function Events() {
               Discover workshops, seminars and community programs. Join us for transformative meditation sessions and retreats.
             </p>
           </ScrollReveal>
-
-          {/* Quick Statistics Row */}
-          <ScrollReveal delay={150}>
-            <div className="inline-flex items-center gap-6 md:gap-10 bg-background/30 backdrop-blur-sm border border-primary/10 px-6 py-2.5 rounded-2xl shadow-soft">
-              <div className="text-center">
-                <div className="text-lg md:text-xl font-black text-primary leading-tight">
-                  {totalEventsCount}+
-                </div>
-                <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Events</div>
-              </div>
-              <div className="h-6 w-px bg-primary/10" />
-              <div className="text-center">
-                <div className="text-lg md:text-xl font-black text-primary leading-tight">
-                  {categoriesCount}
-                </div>
-                <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Categories</div>
-              </div>
-              <div className="h-6 w-px bg-primary/10" />
-              <div className="text-center">
-                <div className="text-lg md:text-xl font-black text-primary leading-tight">
-                  {attendeesCount}+
-                </div>
-                <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Attendees</div>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-
-        {/* Scrollable Filters Section (Non-sticky, No z-index) */}
-        <div className="w-full mb-8">
-          <div className="bg-background/80 backdrop-blur-md border border-primary/10 shadow-soft rounded-2xl p-3 md:p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-              {/* Category */}
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-10 w-full bg-background/50 border-primary/10 rounded-xl text-xs font-semibold">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {CATEGORIES.filter(c => c !== 'All').map(cat => (
-                    <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Date */}
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="h-10 w-full bg-background/50 border-primary/10 rounded-xl text-xs font-semibold">
-                  <SelectValue placeholder="Date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Dates</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="this-week">This Week</SelectItem>
-                  <SelectItem value="this-month">This Month</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Type */}
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="h-10 w-full bg-background/50 border-primary/10 rounded-xl text-xs font-semibold">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="one-time">One-time</SelectItem>
-                  <SelectItem value="recurring">Recurring</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="h-10 w-full bg-background/50 border-primary/10 rounded-xl text-xs font-semibold">
-                  <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="soonest">Soonest First</SelectItem>
-                  <SelectItem value="latest">Latest First</SelectItem>
-                  <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                  <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                  <SelectItem value="capacity-desc">Capacity: High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
         </div>
 
         {/* Loading Skeletons */}
