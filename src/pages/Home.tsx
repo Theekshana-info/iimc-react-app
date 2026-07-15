@@ -310,7 +310,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {OFFERINGS.map((o, i) => (
               <ScrollReveal key={o.title} delay={i * 80}>
-                <div className="group p-6 rounded-2xl border border-foreground/[0.06] hover:border-primary/20 transition-colors duration-300 h-full flex flex-col">
+                <div className="group p-6 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] dark:bg-foreground/[0.04] hover:bg-foreground/[0.03] dark:hover:bg-foreground/[0.06] hover:border-primary/20 transition-all duration-300 h-full flex flex-col">
                   <div className="mb-5 w-14 h-14 rounded-2xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors">
                     <o.icon className="h-7 w-7 text-primary" />
                   </div>
@@ -563,9 +563,9 @@ export default function Home() {
             )}>
               {teachers.map((teacher, i) => (
                 <ScrollReveal key={teacher.id} delay={i * 100}>
-                  <div className="text-center space-y-4">
+                  <div className="text-center p-6 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] dark:bg-foreground/[0.04] hover:bg-foreground/[0.03] dark:hover:bg-foreground/[0.06] h-full flex flex-col items-center transition-all hover:border-primary/20 duration-300">
                     {/* Portrait */}
-                    <div className="relative w-36 h-36 sm:w-44 sm:h-44 mx-auto rounded-full overflow-hidden border-2 border-foreground/[0.06]">
+                    <div className="relative w-36 h-36 sm:w-44 sm:h-44 mx-auto rounded-full overflow-hidden border-2 border-foreground/[0.06] mb-5 shrink-0">
                       {teacher.image_url ? (
                         <img
                           src={teacher.image_url}
@@ -581,7 +581,7 @@ export default function Home() {
                     </div>
 
                     {/* Info */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-5">
                       <h3 className="text-xl font-bold text-foreground">{teacher.name}</h3>
                       {teacher.specialization && (
                         <Badge variant="secondary" className="text-xs font-medium bg-primary/5 border-primary/10 text-primary rounded-full px-3 py-1">
@@ -598,7 +598,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs font-semibold text-primary hover:bg-primary/5 rounded-full group"
+                      className="text-xs font-semibold text-primary hover:bg-primary/5 rounded-full group mt-auto"
                       onClick={() => navigate(`/teachers/${teacher.id}`)}
                     >
                       Read Biography
@@ -640,7 +640,12 @@ export default function Home() {
               </div>
             </ScrollReveal>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className={cn(
+              "grid gap-8",
+              blogPosts.length === 1 ? "grid-cols-1 max-w-sm mx-auto" :
+              blogPosts.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
+              "grid-cols-1 md:grid-cols-3"
+            )}>
               {blogPosts.map((post, i) => {
                 const readTime = estimateReadingTime(post.content || '');
                 const excerpt = post.excerpt || (post.content || '').replace(/<[^>]*>/g, '').substring(0, 140);
@@ -743,7 +748,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {TESTIMONIALS.map((t, i) => (
               <ScrollReveal key={t.name} delay={i * 100}>
-                <div className="p-6 rounded-2xl border border-foreground/[0.06] h-full flex flex-col">
+                <div className="p-6 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] dark:bg-foreground/[0.04] h-full flex flex-col">
                   <Quote className="h-10 w-10 text-primary/20 mb-5 shrink-0" />
                   <p className="text-sm text-muted-foreground leading-relaxed flex-1">
                     {t.review}
