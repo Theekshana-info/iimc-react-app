@@ -717,4 +717,36 @@ All colors MUST be HSL.
     padding-left: 32px;
     font-size: 0.75rem;
   }
+
+  /* ── Home Page — Editorial Section Utilities ── */
+
+  .home-section-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: hsl(var(--primary));
+  }
+
+  .home-quote {
+    font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    font-size: clamp(1.375rem, 3vw, 1.875rem);
+    line-height: 1.7;
+    font-style: italic;
+    font-weight: 500;
+    color: hsl(var(--foreground) / 0.75);
+  }
+
+  .home-faq-trigger {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    text-decoration: none !important;
+    padding: 1.25rem 0;
+  }
+
+  .home-faq-trigger:hover {
+    text-decoration: none !important;
+    color: hsl(var(--primary));
+  }
 }
