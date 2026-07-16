@@ -750,3 +750,13 @@ All colors MUST be HSL.
     color: hsl(var(--primary));
   }
 }
+
+/* ── About Us floating images animation ── */
+@keyframes aboutFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.about-float-img {
+  animation: aboutFloat ease-in-out infinite;
+}

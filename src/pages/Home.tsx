@@ -1,5 +1,6 @@
 import { Hero } from '@/components/Hero';
 import { HomeMessage } from '@/components/HomeMessage';
+import { AnimatedAboutUs } from '@/components/AnimatedAboutUs';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +21,6 @@ import {
 } from '@/components/ui/accordion';
 
 // ── Static images ──
-import aboutImage from '@/assets/iimc-about-page-images/iimc-loby-1.jpeg';
 import donationImage from '@/assets/iimc-about-page-images/iimc-loby-5.jpeg';
 
 // ══════════════════════════════════════════════
@@ -219,49 +219,7 @@ export default function Home() {
       {/* ────────────────────────────────────────────
           SECTION 1 — About IIMC
       ──────────────────────────────────────────── */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Image */}
-            <ScrollReveal direction="left">
-              <div className="relative">
-                <img
-                  src={aboutImage}
-                  alt="Meditation hall at IIMC"
-                  className="w-full h-[320px] sm:h-[400px] lg:h-[460px] object-cover rounded-2xl"
-                  loading="lazy"
-                />
-              </div>
-            </ScrollReveal>
-
-            {/* Text */}
-            <ScrollReveal direction="right">
-              <div className="space-y-5">
-                <span className="home-section-label">About Us</span>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-tight">
-                  A sanctuary for mindfulness and inner peace
-                </h2>
-                <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-                  The Isipathana International Meditation Center (IIMC) is dedicated to offering practical teachings and contemplative practices that help people of all backgrounds discover lasting peace and clarity.
-                </p>
-                <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-                  Rooted in traditional wisdom and guided by experienced teachers, IIMC provides a welcoming space where individuals can slow down, reconnect with themselves, and cultivate a meaningful meditation practice.
-                </p>
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    className="group rounded-full px-6"
-                    onClick={() => navigate('/about')}
-                  >
-                    Learn More
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
+      <AnimatedAboutUs />
 
       {/* ────────────────────────────────────────────
           SECTION 2 — Our Values
@@ -558,8 +516,8 @@ export default function Home() {
             <div className={cn(
               "grid gap-8 lg:gap-10",
               teachers.length === 1 ? "grid-cols-1 max-w-sm mx-auto" :
-              teachers.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
-              "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                teachers.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
+                  "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             )}>
               {teachers.map((teacher, i) => (
                 <ScrollReveal key={teacher.id} delay={i * 100}>
@@ -643,8 +601,8 @@ export default function Home() {
             <div className={cn(
               "grid gap-8",
               blogPosts.length === 1 ? "grid-cols-1 max-w-sm mx-auto" :
-              blogPosts.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
-              "grid-cols-1 md:grid-cols-3"
+                blogPosts.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
+                  "grid-cols-1 md:grid-cols-3"
             )}>
               {blogPosts.map((post, i) => {
                 const readTime = estimateReadingTime(post.content || '');
