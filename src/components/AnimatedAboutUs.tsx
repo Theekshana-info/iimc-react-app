@@ -46,12 +46,14 @@ const DESKTOP_IMAGE_POSITIONS = [
 
 // ── Image positions for mobile (top portion of card) ──
 const MOBILE_IMAGE_POSITIONS = [
-  { top: '-5%', left: '5%', width: '120px', height: '135px', rotate: -4, zIndex: 30, featured: true, animDuration: '4s', animDelay: '0s' },
-  { top: '-2%', left: '42%', width: '80px', height: '90px', rotate: 5, zIndex: 20, featured: false, animDuration: '5s', animDelay: '0.3s' },
-  { top: '2%', left: '72%', width: '100px', height: '110px', rotate: -3, zIndex: 20, featured: false, animDuration: '4.5s', animDelay: '0.7s' },
-  { top: '42%', left: '2%', width: '90px', height: '100px', rotate: 3, zIndex: 20, featured: false, animDuration: '5.5s', animDelay: '1s' },
-  { top: '40%', left: '35%', width: '105px', height: '115px', rotate: -2, zIndex: 25, featured: false, animDuration: '4s', animDelay: '0.5s' },
-  { top: '35%', left: '68%', width: '110px', height: '130px', rotate: 5, zIndex: 20, featured: false, animDuration: '5s', animDelay: '0.9s' },
+  // Row 1 — three images across
+  { top: '2%', left: '3%', width: '90px', height: '95px', rotate: -3, zIndex: 20, featured: false, animDuration: '4s', animDelay: '0s' },
+  { top: '0%', left: '36%', width: '85px', height: '90px', rotate: 3, zIndex: 20, featured: false, animDuration: '5s', animDelay: '0.4s' },
+  { top: '3%', left: '68%', width: '88px', height: '92px', rotate: -2, zIndex: 20, featured: false, animDuration: '4.5s', animDelay: '0.8s' },
+  // Row 2 — three images across
+  { top: '42%', left: '5%', width: '85px', height: '90px', rotate: 2, zIndex: 20, featured: false, animDuration: '5.5s', animDelay: '1s' },
+  { top: '44%', left: '35%', width: '90px', height: '95px', rotate: -3, zIndex: 20, featured: false, animDuration: '4s', animDelay: '0.6s' },
+  { top: '40%', left: '66%', width: '88px', height: '92px', rotate: 4, zIndex: 20, featured: false, animDuration: '5s', animDelay: '1.2s' },
 ];
 
 // Testimonial text animation (only text changes, not images)
