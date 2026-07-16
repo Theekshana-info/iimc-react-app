@@ -9,7 +9,7 @@ export default function LocationMap() {
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
 
-  const address = "Isipathana International Meditation Center (IIMC), Gandara, Sri Lanka";
+  const address = "Isipathana International Meditation Center (IIMC), Meddawatta, Matara, Sri Lanka";
   const coordinates = "5.9410472, 80.5716998";
   const googleMapsUrl = "https://maps.app.goo.gl/udmAByvUPiBfzuxs7";
   const directionsUrl = "https://www.google.com/maps/dir/?api=1&destination=5.9410472,80.5716998";
@@ -41,7 +41,7 @@ export default function LocationMap() {
       {/* Upper Main Card containing Split-Screen Map & Info */}
       <Card className="shadow-soft overflow-hidden border-0 neu-raised bg-background/60 backdrop-blur-md">
         <CardContent className="p-0 grid grid-cols-1 lg:grid-cols-12">
-          
+
           {/* Left Panel: Glassmorphic Information (5 columns on large screens) */}
           <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border-r border-slate-200/20 dark:border-slate-800/20">
             <div>
@@ -50,12 +50,12 @@ export default function LocationMap() {
                 <Sparkles className="h-3 w-3" />
                 <span>Spiritual Sanctuary</span>
               </div>
-              
+
               <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-2">
                 Our Sanctuary
               </h3>
               <p className="text-muted-foreground text-sm sm:text-base mb-6 leading-relaxed">
-                A serene sanctuary for mindfulness, meditation, and inner peace in Gandara.
+                A serene sanctuary for mindfulness, meditation, and inner peace in Matara.
               </p>
 
               {/* Info Rows */}
@@ -157,11 +157,10 @@ export default function LocationMap() {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Isipathana International Meditation Center Location"
-              className={`w-full h-full border-0 transition-all duration-700 select-none ${
-                theme === 'dark'
-                  ? 'invert-[90%] hue-rotate-[180deg] brightness-[95%] contrast-[92%] saturate-[1.1]'
-                  : 'grayscale-[15%] contrast-[1.08] brightness-[102%] saturate-[0.85]'
-              }`}
+              className={`w-full h-full border-0 transition-all duration-700 select-none ${theme === 'dark'
+                ? 'invert-[90%] hue-rotate-[180deg] brightness-[95%] contrast-[92%] saturate-[1.1]'
+                : 'grayscale-[15%] contrast-[1.08] brightness-[102%] saturate-[0.85]'
+                }`}
             ></iframe>
           </div>
         </CardContent>

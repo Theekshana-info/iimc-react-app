@@ -103,7 +103,7 @@ export default function About() {
               A sanctuary for mindfulness<br className="hidden sm:block" /> and inner peace
             </h1>
             <p className="text-white/70 text-base sm:text-lg max-w-xl leading-relaxed">
-              Where ancient wisdom meets modern practice, in the heart of Gandara, Sri Lanka.
+              Where ancient wisdom meets modern practice, in the heart of Matara, Sri Lanka.
             </p>
           </ScrollReveal>
         </div>
@@ -141,7 +141,7 @@ export default function About() {
                     The Isipathana International Meditation Center was founded with a simple purpose: to offer a genuine space where anyone — regardless of age, background, or belief — can discover the transformative power of meditation.
                   </p>
                   <p>
-                    Nestled in the peaceful surroundings of Gandara, Sri Lanka, our center is guided by experienced teachers rooted in traditional Buddhist wisdom. We provide practical, contemplative teachings that go beyond theory — helping people cultivate real stillness, clarity, and compassion in their daily lives.
+                    Nestled in the peaceful surroundings of Matara, Sri Lanka, our center is guided by experienced teachers rooted in traditional Buddhist wisdom. We provide practical, contemplative teachings that go beyond theory — helping people cultivate real stillness, clarity, and compassion in their daily lives.
                   </p>
                   <blockquote className="border-l-2 border-primary/40 pl-5 my-6 italic text-foreground/80">
                     "Peace is not something you find at the end of a journey. It is the way you travel."
@@ -497,7 +497,7 @@ export default function About() {
               Visit our sanctuary
             </h2>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-10 max-w-xl">
-              Located in the peaceful town of Gandara, Sri Lanka, our center is easy to find and always welcoming. We look forward to receiving you.
+              Located in the peaceful town of Matara, Sri Lanka, our center is easy to find and always welcoming. We look forward to receiving you.
             </p>
           </ScrollReveal>
 
