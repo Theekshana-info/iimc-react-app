@@ -80,11 +80,7 @@ function FloatingImages({ positions }: { positions: typeof DESKTOP_IMAGE_POSITIO
           }}
         >
           <div
-            className={`w-full h-full rounded-xl overflow-hidden shadow-xl ${
-              pos.featured
-                ? 'ring-[3px] ring-sky-300 ring-offset-2 ring-offset-sky-600/50'
-                : 'ring-1 ring-white/20'
-            }`}
+            className="w-full h-full rounded-xl overflow-hidden shadow-xl ring-1 ring-white/20"
             style={{ transform: `rotate(${pos.rotate}deg)` }}
           >
             <img
